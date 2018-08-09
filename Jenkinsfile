@@ -13,7 +13,7 @@ pipeline {
 
   environment {
     DOCKER_REGISTRY = 'https://166568770115.dkr.ecr.eu-central-1.amazonaws.com'
-    DOCKER_IMAGE = 'aeternity/aepp-topup'
+    DOCKER_IMAGE = 'aeternity/aepp-faucet'
     ECR_CREDENTIAL = 'ecr:eu-central-1:aws-jenkins'
   }
 

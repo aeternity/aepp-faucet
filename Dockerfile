@@ -12,5 +12,5 @@ COPY . /data/
 
 RUN pip install -r /data/requirements.txt
 
-ENTRYPOINT [ "python", "/data/topup.py"]
+ENTRYPOINT [ "python", "/data/faucet.py"]
 CMD [ "start"]

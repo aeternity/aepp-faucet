@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# version 0.2.1-DEV
 
 import os
 import sys
@@ -7,7 +6,7 @@ import logging
 import argparse
 
 # flask
-from flask import Flask, jsonify
+from flask import Flask, request, jsonify, render_template
 
 # aeternity
 from aeternity.epoch import EpochClient
@@ -42,9 +41,16 @@ def after_request(response):
     return response
 
 
-@app.route('/rest/topup/<recipient_address>')
-def rest_topup(recipient_address):
+@app.route('/')
+def hello(name=None):
+    return render_template('index.html')
+
+
+@app.route('/account/<recipient_address>',  methods=['POST'])
+def rest_faucet(recipient_address):
     """top up an account"""
+    # recipient_address = request.form.get("account")
+    
     # genesys key
     bank_wallet_key = os.environ.get('BANK_WALLET_KEY')
     kp = KeyPair.from_private_key_string(bank_wallet_key)
@@ -70,8 +76,8 @@ def rest_topup(recipient_address):
 
 def cmd_start(args=None):
     root.addHandler(app.logger)
-    logging.info("topup service started")
-    app.run(host='0.0.0.0')
+    logging.info("faucet service started")
+    app.run(host='0.0.0.0', port=5000)
 
 
 if __name__ == '__main__':

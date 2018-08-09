@@ -2,7 +2,7 @@ GIT_DESCR = $(shell git describe --always)
 # build output folder
 OUTPUTFOLDER = dist
 # docker image
-DOCKER_IMAGE = 166568770115.dkr.ecr.eu-central-1.amazonaws.com/aeternity/aepp-topup
+DOCKER_IMAGE = 166568770115.dkr.ecr.eu-central-1.amazonaws.com/aeternity/aepp-faucet
 DOCKER_TAG = $(shell git describe --always)
 # build paramters
 OS = linux
@@ -40,4 +40,4 @@ docker-run:
 	@docker run -p 5000:5000 $(DOCKER_IMAGE) 
 
 debug-start:
-	@python3 topup.py start
+	@python3 faucet.py start

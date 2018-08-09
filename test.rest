@@ -1,0 +1,6 @@
+### get the version 
+GET http://localhost:5000/rest/topup/ak$kcCLR4GVfBpX6ctFMeXJh33eQT7Cky5SfVzDczDMNo5QM4vyt
+
+
+### 
+GET https://sdk-testnet.aepps.com/v2/account/ak$kcCLR4GVfBpX6ctFMeXJh33eQT7Cky5SfVzDczDMNo5QM4vyt

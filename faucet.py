@@ -50,7 +50,7 @@ def hello(name=None):
 def rest_faucet(recipient_address):
     """top up an account"""
     # recipient_address = request.form.get("account")
-    
+
     # genesys key
     bank_wallet_key = os.environ.get('BANK_WALLET_KEY')
     kp = KeyPair.from_private_key_string(bank_wallet_key)
@@ -61,9 +61,11 @@ def rest_faucet(recipient_address):
     # amount
     amount = int(os.environ.get('TOPUP_AMOUNT', 250))
     ttl = int(os.environ.get('TX_TTL', 100))
-    tx = EpochClient().spend(kp, recipient_address, amount, tx_ttl=ttl)
+    client = EpochClient()
+    tx = client.spend(kp, recipient_address, amount, tx_ttl=ttl)
+    balance = client.get_balance(account_pubkey=recipient_address)
     logging.info(f"top up accont {recipient_address} of {amount} tx_ttl:{ttl} tx_hash: {tx[1]}")
-    return jsonify({"tx_hash": tx[1]})
+    return jsonify({"tx_hash": tx[1], "balance": balance})
 
 #     ______  ____    ____  ______     ______
 #   .' ___  ||_   \  /   _||_   _ `. .' ____ \

@@ -43,7 +43,8 @@ def after_request(response):
 
 @app.route('/')
 def hello(name=None):
-    return render_template('index.html')
+    amount = int(os.environ.get('TOPUP_AMOUNT', 250))
+    return render_template('index.html', amount=amount)
 
 
 @app.route('/account/<recipient_address>',  methods=['POST'])

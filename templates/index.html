@@ -34,12 +34,12 @@
       var account = document.querySelector("#recipientAddress").value
       var resultEl = document.querySelector("#result")
       showResult(resultEl)
-      document.querySelector("#result").innerHTML = '<div class="flex flex-col"><img src="https://loading.io/spinners/infinity/index.infinity-rotate-cycle-loader.svg" class="inline-block"><div class="font-mono inline-block text-center mt-4">Adding 250 AET to:<br><strong class="mt-4 inline-block text-xs">' + account + '</strong></div></div></div>'
+      document.querySelector("#result").innerHTML = '<div class="flex flex-col"><img src="https://loading.io/spinners/infinity/index.infinity-rotate-cycle-loader.svg" class="inline-block"><div class="font-mono inline-block text-center mt-4">Adding {{ amount }} AET to:<br><strong class="mt-4 inline-block text-xs">' + account + '</strong></div></div></div>'
       axios.post("/account/" + account)
         .then(function (response) {
-          var linkToExplorer = '<strong>Added 250 AET!</strong><br>'
+          var linkToExplorer = '<strong>Added {{ amount }} AET!</strong><br>'
           linkToExplorer = linkToExplorer + '<br>Current Balance: ' + response.data.balance + '<br>'
-          linkToExplorer = linkToExplorer + '<br>Transaction: <a class="text-purple font-mono text-xs" href="https://sdk-testnet-explorer.aepps.com/#/tx/' + response.data.tx_hash + '" target="_blank">' + 'ak$2nsbEHGpZDs2vhuJnbZDCKsFY1k4qyH18TongQqgWwHCwJa1oS' + '</a>'
+          linkToExplorer = linkToExplorer + '<br>Transaction: <a class="text-purple font-mono text-xs" href="https://sdk-testnet-explorer.aepps.com/#/tx/' + response.data.tx_hash + '" target="_blank">' + response.data.tx_hash + '</a>'
           resultEl.innerHTML = linkToExplorer
         })
         .catch(function (error) {

@@ -6,11 +6,11 @@ import logging
 import argparse
 
 # flask
-from flask import Flask, request, jsonify, render_template
+from flask import Flask, jsonify, render_template
 
 # aeternity
 from aeternity.epoch import EpochClient
-from aeternity.signing import KeyPair
+from aeternity.signing import KeyPair, is_valid_hash
 from aeternity.config import Config
 
 
@@ -51,6 +51,9 @@ def hello(name=None):
 def rest_faucet(recipient_address):
     """top up an account"""
     # recipient_address = request.form.get("account")
+    # validate the address
+    if len(recipient_address.strip()) < 3 or not is_valid_hash(recipient_address, prefix='ak'):
+        return jsonify({"message": "bad request"}), 400
 
     # genesys key
     bank_wallet_key = os.environ.get('BANK_WALLET_KEY')
@@ -65,8 +68,8 @@ def rest_faucet(recipient_address):
     client = EpochClient()
     tx = client.spend(kp, recipient_address, amount, tx_ttl=ttl)
     balance = client.get_balance(account_pubkey=recipient_address)
-    logging.info(f"top up accont {recipient_address} of {amount} tx_ttl:{ttl} tx_hash: {tx[1]}")
-    return jsonify({"tx_hash": tx[1], "balance": balance})
+    logging.info(f"top up accont {recipient_address} of {amount} tx_ttl:{ttl} tx_hash: {tx}")
+    return jsonify({"tx_hash": tx, "balance": balance})
 
 #     ______  ____    ____  ______     ______
 #   .' ___  ||_   \  /   _||_   _ `. .' ____ \

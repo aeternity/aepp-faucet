@@ -44,7 +44,7 @@
         })
         .catch(function (error) {
           var errorString = 'Something went wrong.<br>'
-          errorString = errorString + ' ' + error + '<br>'
+          errorString = errorString + ' ' + error.response.data.message + '<br>'
           resultEl.innerHTML = errorString
           console.log(error);
         })

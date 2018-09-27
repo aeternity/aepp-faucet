@@ -12,6 +12,7 @@ from flask import Flask, jsonify, render_template
 from aeternity.epoch import EpochClient
 from aeternity.signing import Account
 from aeternity.utils import is_valid_hash
+from aeternity.openapi import OpenAPIClientException
 from aeternity.config import Config
 
 
@@ -59,7 +60,7 @@ def rest_faucet(recipient_address):
 
     # genesys key
     bank_wallet_key = os.environ.get('FAUCET_ACCOUNT_PRIV_KEY')
-    kp = KeyPair.from_private_key_string(bank_wallet_key)
+    kp = Account.from_private_key_string(bank_wallet_key)
     # target node
     Config.set_defaults(Config(
         external_url=os.environ.get('EPOCH_URL', "https://sdk-testnet.aepps.com"),

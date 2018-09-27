@@ -58,7 +58,6 @@ def rest_faucet(recipient_address):
 
     # genesys key
     bank_wallet_key = os.environ.get('FAUCET_ACCOUNT_PRIV_KEY')
-    print (bank_wallet_key)
     kp = KeyPair.from_private_key_string(bank_wallet_key)
     # target node
     Config.set_defaults(Config(
@@ -86,7 +85,7 @@ def rest_faucet(recipient_address):
 def cmd_start(args=None):
     root.addHandler(app.logger)
     logging.info("faucet service started")
-    app.run(host='0.0.0.0', port=5678)
+    app.run(host='0.0.0.0', port=5000)
 
 
 if __name__ == '__main__':

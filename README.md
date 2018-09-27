@@ -14,5 +14,3 @@ Configuring Faucet application via enviornment variable:
 
 ## Example Usage
 ```
-curl -X POST http://faucet.aepps.com/account/ak_kcCLR4GVfBpX6ctFMeXJh33eQT7Cky5SfVzDczDMNo5QM4vyt
-```

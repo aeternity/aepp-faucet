@@ -52,8 +52,8 @@ def rest_faucet(recipient_address):
     """top up an account"""
     # recipient_address = request.form.get("account")
     # validate the address
-    logging.info("top up request for recipient_address")
-    print (logging.info)
+    logging.info(f"Top up request for {recipient_address}")
+    print (recipient_address)
     if len(recipient_address.strip()) < 3 or not is_valid_hash(recipient_address, prefix='ak'):
         return jsonify({"message": "bad request"}), 400
 

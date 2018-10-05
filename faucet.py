@@ -10,7 +10,8 @@ from flask import Flask, jsonify, render_template
 
 # aeternity
 from aeternity.epoch import EpochClient
-from aeternity.signing import KeyPair, is_valid_hash
+from aeternity.signing import Account
+from aeternity.utils import is_valid_hash
 from aeternity.config import Config
 
 

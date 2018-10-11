@@ -32,8 +32,8 @@ docker-build:
 
 docker-push: docker-build
 	@echo push image
-	docker tag $(DOCKER_IMAGE):$(DOCKER_TAG) $(DOCKER_IMAGE):latest
-	docker push $(DOCKER_IMAGE)
+	docker push $(DOCKER_IMAGE):$(DOCKER_TAG)
+	docker push $(DOCKER_IMAGE):$(DOCKER_TAG)
 	@echo done
 
 docker-run: 

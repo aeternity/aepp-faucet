@@ -10,7 +10,8 @@ from flask import Flask, jsonify, render_template
 
 # aeternity
 from aeternity.epoch import EpochClient
-from aeternity.signing import KeyPair, is_valid_hash
+from aeternity.signing import Account
+from aeternity.utils import is_valid_hash
 from aeternity.config import Config
 
 
@@ -52,22 +53,24 @@ def rest_faucet(recipient_address):
     """top up an account"""
     # recipient_address = request.form.get("account")
     # validate the address
+    logging.info(f"Top up request for {recipient_address}")
     if len(recipient_address.strip()) < 3 or not is_valid_hash(recipient_address, prefix='ak'):
         return jsonify({"message": "bad request"}), 400
 
     # genesys key
-    bank_wallet_key = os.environ.get('BANK_WALLET_KEY')
+    bank_wallet_key = os.environ.get('FAUCET_ACCOUNT_PRIV_KEY')
     kp = KeyPair.from_private_key_string(bank_wallet_key)
     # target node
     Config.set_defaults(Config(
-        external_url=os.environ.get('EPOCH_URL', "https://sdk-testnet.aepps.com")
+        external_url=os.environ.get('EPOCH_URL', "https://sdk-testnet.aepps.com"),
+        internal_url=os.environ.get('EPOCH_URL', "https://sdk-testnet.aepps.com"),
     ))
     # amount
     amount = int(os.environ.get('TOPUP_AMOUNT', 250))
     ttl = int(os.environ.get('TX_TTL', 100))
     client = EpochClient()
     tx = client.spend(kp, recipient_address, amount, tx_ttl=ttl)
-    balance = client.get_balance(account_pubkey=recipient_address)
+    balance = client.get_account_by_pubkey(pubkey=recipient_address).balance
     logging.info(f"top up accont {recipient_address} of {amount} tx_ttl:{ttl} tx_hash: {tx}")
     return jsonify({"tx_hash": tx, "balance": balance})
 

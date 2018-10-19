@@ -1,2 +1,2 @@
-aepp_sdk==0.22.0.1rc2
+aepp_sdk==0.24.0.1b1
 Flask==0.12.3

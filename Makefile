@@ -2,7 +2,8 @@ GIT_DESCR = $(shell git describe --always)
 # build output folder
 OUTPUTFOLDER = dist
 # docker image
-DOCKER_IMAGE = 166568770115.dkr.ecr.eu-central-1.amazonaws.com/aeternity/aepp-faucet
+DOCKER_REGISTRY = 166568770115.dkr.ecr.eu-central-1.amazonaws.com/aeternity
+DOCKER_IMAGE = aepp-faucet
 DOCKER_TAG = $(shell git describe --always)
 # build paramters
 OS = linux
@@ -23,21 +24,20 @@ clean:
 	@rm -rf dist
 	@echo done
 
-docker: docker-build
-
 docker-build:
 	@echo build image
-	docker build -t $(DOCKER_IMAGE):$(DOCKER_TAG) -f Dockerfile .
+	docker build -t $(DOCKER_IMAGE) -f Dockerfile .
 	@echo done
 
 docker-push: docker-build
 	@echo push image
-	docker push $(DOCKER_IMAGE):$(DOCKER_TAG)
-	docker push $(DOCKER_IMAGE):$(DOCKER_TAG)
+	docker tag $(DOCKER_IMAGE) $(DOCKER_REGISTRY)/$(DOCKER_IMAGE):$(DOCKER_TAG)
+	docker push $(DOCKER_REGISTRY)/$(DOCKER_IMAGE):$(DOCKER_TAG)
 	@echo done
 
 docker-run: 
 	@docker run -p 5000:5000 $(DOCKER_IMAGE) 
 
 debug-start:
-	@python3 faucet.py start
+	. .envrc
+	python3 faucet.py start

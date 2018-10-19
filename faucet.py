@@ -53,6 +53,8 @@ def hello(name=None):
 @app.route('/account/<recipient_address>',  methods=['POST'])
 def rest_faucet(recipient_address):
     """top up an account"""
+    amount = int(os.environ.get('TOPUP_AMOUNT', 250))
+    ttl = int(os.environ.get('TX_TTL', 100))
     try:
         # validate the address
         logging.info(f"Top up request for {recipient_address}")
@@ -68,12 +70,10 @@ def rest_faucet(recipient_address):
             internal_url=os.environ.get('EPOCH_URL', "https://sdk-testnet.aepps.com"),
         ))
         # amount
-        amount = int(os.environ.get('TOPUP_AMOUNT', 250))
-        ttl = int(os.environ.get('TX_TTL', 100))
         client = EpochClient()
         _, _, tx = client.spend(kp, recipient_address, amount, tx_ttl=ttl)
         balance = client.get_account_by_pubkey(pubkey=recipient_address).balance
-        logging.info(f"top up accont {recipient_address} of {amount} tx_ttl:{ttl} tx_hash: {tx}")
+        logging.info(f"Top up accont {recipient_address} of {amount} tx_ttl: {ttl} tx_hash: {tx} completed")
         return jsonify({"tx_hash": tx, "balance": balance})
     except OpenAPIClientException as e:
         logging.error(f"Api error: top up accont {recipient_address} of {amount} failed with error", e)

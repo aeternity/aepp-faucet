@@ -15,6 +15,9 @@ from aeternity.utils import is_valid_hash
 from aeternity.openapi import OpenAPIClientException
 from aeternity.config import Config
 
+# telegram
+import telegram
+
 
 # also log to stdout because docker
 root = logging.getLogger()
@@ -74,6 +77,19 @@ def rest_faucet(recipient_address):
         _, _, tx = client.spend(kp, recipient_address, amount, tx_ttl=ttl)
         balance = client.get_account_by_pubkey(pubkey=recipient_address).balance
         logging.info(f"Top up accont {recipient_address} of {amount} tx_ttl: {ttl} tx_hash: {tx} completed")
+
+        # telegram bot notifications
+        enable_telegaram = os.environ.get('TELEGRAM_API_TOKEN', False)
+        if enable_telegaram:
+            token = os.environ.get('TELEGRAM_API_TOKEN', None)
+            chat_id = os.environ.get('TELEGRAM_CHAT_ID', None)
+            node = os.environ.get('EPOCH_URL', "https://sdk-testnet.aepps.com").replace("https://", "")
+            if token is None or chat_id is None:
+                logging.warning(f"missing chat_id ({chat_id}) or token {token} for telegram integration")
+            bot = telegram.Bot(token=token)
+            bot.send_message(chat_id=chat_id,
+                             text=f"Account `{recipient_address}` credited with {amount} tokens on `{node}`. (tx hash: `{tx}`)",
+                             parse_mode=telegram.ParseMode.MARKDOWN)
         return jsonify({"tx_hash": tx, "balance": balance})
     except OpenAPIClientException as e:
         logging.error(f"Api error: top up accont {recipient_address} of {amount} failed with error", e)

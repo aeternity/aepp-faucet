@@ -71,7 +71,7 @@ def rest_faucet(recipient_address):
         # target node
         Config.set_defaults(Config(
             external_url=os.environ.get('EPOCH_URL', "https://sdk-testnet.aepps.com"),
-            internal_url=os.environ.get('EPOCH_URL', "https://sdk-testnet.aepps.com"),
+            internal_url=os.environ.get('EPOCH_URL_DEBUG', "https://sdk-testnet.aepps.com"),
         ))
         # amount
         client = EpochClient()

@@ -50,7 +50,8 @@ def after_request(response):
 def hello(name=None):
     amount = int(os.environ.get('TOPUP_AMOUNT', 250))
     node = os.environ.get('EPOCH_URL', "https://sdk-testnet.aepps.com").replace("https://", "node@")
-    return render_template('index.html', amount=amount, node=node)
+    explorer_url = os.environ.get("EXPLORER_URL", "https://explorer.aepps.com")
+    return render_template('index.html', amount=amount, node=node, explorer_url=explorer_url)
 
 
 @app.route('/account/<recipient_address>',  methods=['POST'])

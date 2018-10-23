@@ -40,8 +40,8 @@
         .then(function (response) {
           var linkToExplorer = '<strong>Added {{ amount }} AET!</strong><br>'
           linkToExplorer = linkToExplorer + '<br>Current Balance: ' + response.data.balance + '<br>'
-          linkToExplorer = linkToExplorer + '<br>Transaction: <a class="text-purple font-mono text-xs" href="https://sdk-testnet-explorer.aepps.com/#/tx/' + response.data.tx_hash + '" target="_blank">' + response.data.tx_hash + '</a><br>'
-          linkToExplorer = linkToExplorer + '<br>Account: <a class="text-purple font-mono text-xs" href="https://sdk-testnet-explorer.aepps.com/#/account/' + account + '" target="_blank">' + account + '</a>'
+          linkToExplorer = linkToExplorer + '<br>Transaction: <a class="text-purple font-mono text-xs" href="{{explorer_url}}/#/tx/' + response.data.tx_hash + '" target="_blank">' + response.data.tx_hash + '</a><br>'
+          linkToExplorer = linkToExplorer + '<br>Account: <a class="text-purple font-mono text-xs" href="{{explorer_url}}/#/account/' + account + '" target="_blank">' + account + '</a>'
           resultEl.innerHTML = linkToExplorer
         })
         .catch(function (error) {

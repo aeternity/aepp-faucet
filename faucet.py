@@ -73,9 +73,11 @@ def rest_faucet(recipient_address):
             external_url=os.environ.get('EPOCH_URL', "https://sdk-testnet.aepps.com"),
             internal_url=os.environ.get('EPOCH_URL_DEBUG', "https://sdk-testnet.aepps.com"),
         ))
-        # amount
+        # payload
+        payload = os.environ.get('TX_PAYLOAD', "Faucet Tx")
+        # execute the spend transaction
         client = EpochClient()
-        _, _, tx = client.spend(kp, recipient_address, amount, tx_ttl=ttl)
+        _, _, tx = client.spend(kp, recipient_address, amount, payload=payload, tx_ttl=ttl)
         balance = client.get_account_by_pubkey(pubkey=recipient_address).balance
         logging.info(f"Top up accont {recipient_address} of {amount} tx_ttl: {ttl} tx_hash: {tx} completed")
 

@@ -15,6 +15,7 @@ Configuring Faucet application via enviornment variable:
 - `TX_TTL` How many key blocks will live before it is mined (Default value 100)
 - `EXPLORER_URL` Url of the explorer app (Default value 'https://explorer.aepps.com')
 - `TX_PAYLOAD` Value to use to fill the payload for the transactions (Default value `Faucet Tx`)
+- `NETWORK_ID` The network id (Default value `ae_devnet`)
 
 ### Telegram integration
 

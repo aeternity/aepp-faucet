@@ -59,7 +59,7 @@ def hello(name=None):
 @app.route('/account/<recipient_address>',  methods=['POST'])
 def rest_faucet(recipient_address):
     """top up an account"""
-    amount = int(os.environ.get('TOPUP_AMOUNT', 250))
+    amount = int(os.environ.get('TOPUP_AMOUNT', 250000000000000000000))
     ttl = int(os.environ.get('TX_TTL', 100))
     try:
         # validate the address

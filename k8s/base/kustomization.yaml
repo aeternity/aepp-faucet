@@ -1,0 +1,6 @@
+# Example configuration for the webserver
+commonLabels:
+  app: aepp-faucet
+
+resources:
+  - deployment.yaml

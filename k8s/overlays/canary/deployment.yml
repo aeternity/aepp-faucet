@@ -1,0 +1,26 @@
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: aepp-faucet-config
+  namespace: canary
+data:
+  EPOCH_URL: "https://sdk-canary.aepps.com"
+  TOPUP_AMOUNT: "5000000000000000000"
+  TX_TTL: "50"
+  EXPLORER_URL: "https://canary.explorer.aepps.com"
+  NETWORK_ID: "ae_canary"
+  TELEGRAM_ENABLED: "True"
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aepp-faucet
+  namespace: canary
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aepp-faucet-service
+  namespace: canary

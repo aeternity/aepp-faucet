@@ -1,0 +1,105 @@
+---
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: aepp-faucet-config
+  namespace: testnet
+data:
+  EPOCH_URL: 'https://sdk-testnet.aepps.com'
+  TOPUP_AMOUNT: '5000000000000000000'
+  TX_TTL: '50'
+  EXPLORER_URL: 'https://testnet.explorer.aepps.com'
+  NETWORK_ID: 'ae_uat'
+  TELEGRAM_ENABLED: 'True'
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aepp-faucet
+  namespace: testnet
+spec:
+  selector:
+    matchLabels:
+      app: aepp-faucet
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: aepp-faucet
+    spec:
+      terminationGracePeriodSeconds: 30
+      containers:
+      - name: aepp-faucet
+        image: 166568770115.dkr.ecr.eu-central-1.amazonaws.com/aeternity/aepp-faucet:0.24.0.1
+        ports:
+        - name: web
+          containerPort: 5000
+        imagePullPolicy: Always
+        resources:
+          requests:
+            cpu: "200m"
+            memory: "128Mi"
+          limits:
+            cpu: "600m"
+            memory: "256Mi"
+        env:
+        - name: EPOCH_URL
+          valueFrom:
+            configMapKeyRef:
+              name: aepp-faucet-config
+              key: EPOCH_URL
+        - name: TX_TTL
+          valueFrom:
+            configMapKeyRef:
+              name: aepp-faucet-config
+              key: TX_TTL
+        - name: TOPUP_AMOUNT
+          valueFrom:
+            configMapKeyRef:
+              name: aepp-faucet-config
+              key: TOPUP_AMOUNT
+        - name: EXPLORER_URL
+          valueFrom:
+            configMapKeyRef:
+              name: aepp-faucet-config
+              key: EXPLORER_URL
+        - name: NETWORK_ID
+          valueFrom:
+            configMapKeyRef:
+              name: aepp-faucet-config
+              key: NETWORK_ID
+        - name: FAUCET_ACCOUNT_PRIV_KEY
+          valueFrom:
+            secretKeyRef:
+              name: aepp-faucet-secrets
+              key: FAUCET_ACCOUNT_PRIV_KEY
+        - name: TELEGRAM_ENABLED
+          valueFrom:
+            configMapKeyRef:
+              name: aepp-faucet-config
+              key: TELEGRAM_ENABLED
+        - name: TELEGRAM_API_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: aepp-faucet-secrets
+              key: TELEGRAM_API_TOKEN
+        - name: TELEGRAM_CHAT_ID
+          valueFrom:
+            secretKeyRef:
+              name: aepp-faucet-secrets
+              key: TELEGRAM_CHAT_ID
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aepp-faucet-service
+  namespace: testnet
+spec:
+  ports:
+  - name: web
+    port: 80
+    targetPort: 5000
+    protocol: TCP
+  selector:
+    app: aepp-faucet

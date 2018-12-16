@@ -45,8 +45,9 @@
           resultEl.innerHTML = linkToExplorer
         })
         .catch(function (error) {
-          var errorString = 'Something went wrong.<br>'
-          errorString = errorString + ' ' + error.response.data.message + '<br>'
+          var errorString = 'Something went wrong. ¯\\_(ツ)_/¯  <br>'
+          errorString = errorString + ' ' + error.response.data.message + '.<br>'
+          errorString = errorString + 'Please try again later.'
           resultEl.innerHTML = errorString
           console.log(error);
         })

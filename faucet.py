@@ -37,6 +37,12 @@ logging.getLogger("aeternity.epoch").setLevel(logging.WARNING)
 # logging.getLogger("urllib3.connectionpool").setLevel(logging.WARNING)
 # logging.getLogger("engineio").setLevel(logging.ERROR)
 
+AE_UNIT = 1000000000000000000
+
+
+def amount_to_ae(val):
+    return f"{val/AE_UNIT:.0f}AE"
+
 
 @app.after_request
 def after_request(response):
@@ -48,18 +54,18 @@ def after_request(response):
 
 @app.route('/')
 def hello(name=None):
-    amount = int(os.environ.get('TOPUP_AMOUNT', 250000000000000000000))
-    network_id = os.environ.get('NETWORK_ID', "ae_devnet")
+    amount = int(os.environ.get('TOPUP_AMOUNT', 5000000000000000000))
+    network_id = os.environ.get('NETWORK_ID', "ae_uat")
     node = os.environ.get('EPOCH_URL', "https://sdk-testnet.aepps.com").replace("https://", "node@")
     node = f"{node} / {network_id}"
-    explorer_url = os.environ.get("EXPLORER_URL", "https://explorer.aepps.com")
+    explorer_url = os.environ.get("EXPLORER_URL", "https://testnet.explorer.aepps.com")
     return render_template('index.html', amount=amount, node=node, explorer_url=explorer_url)
 
 
 @app.route('/account/<recipient_address>',  methods=['POST'])
 def rest_faucet(recipient_address):
     """top up an account"""
-    amount = int(os.environ.get('TOPUP_AMOUNT', 250000000000000000000))
+    amount = int(os.environ.get('TOPUP_AMOUNT', 5000000000000000000))
     ttl = int(os.environ.get('TX_TTL', 100))
     try:
         # validate the address
@@ -74,7 +80,7 @@ def rest_faucet(recipient_address):
         Config.set_defaults(Config(
             external_url=os.environ.get('EPOCH_URL', "https://sdk-testnet.aepps.com"),
             internal_url=os.environ.get('EPOCH_URL_DEBUG', "https://sdk-testnet.aepps.com"),
-            network_id=os.environ.get('NETWORK_ID', "ae_devnet"),
+            network_id=os.environ.get('NETWORK_ID', "ae_uat")
         ))
         # payload
         payload = os.environ.get('TX_PAYLOAD', "Faucet Tx")
@@ -94,15 +100,15 @@ def rest_faucet(recipient_address):
                 logging.warning(f"missing chat_id ({chat_id}) or token {token} for telegram integration")
             bot = telegram.Bot(token=token)
             bot.send_message(chat_id=chat_id,
-                             text=f"Account `{recipient_address}` credited with {amount} tokens on `{node}`. (tx hash: `{tx}`)",
+                             text=f"Account `{recipient_address}` credited with {amount_to_ae(amount)} tokens on `{node}`. (tx hash: `{tx}`)",
                              parse_mode=telegram.ParseMode.MARKDOWN)
         return jsonify({"tx_hash": tx, "balance": balance})
     except OpenAPIClientException as e:
         logging.error(f"Api error: top up accont {recipient_address} of {amount} failed with error", e)
-        return jsonify({"message": "The node is temporarily unavailable, contact aepp-dev[at]aeternity.com"}), 503
+        return jsonify({"message": "The node is temporarily unavailable, please try again later"}), 503
     except Exception as e:
         logging.error(f"Generic error: top up accont {recipient_address} of {amount} failed with error", e)
-        return jsonify({"message": "Unknow error, please contact contact aepp-dev[at]aeternity.com"}), 500
+        return jsonify({"message": "Unknow error, please contact aepp-dev[at]aeternity.com"}), 500
 
 
 #     ______  ____    ____  ______     ______

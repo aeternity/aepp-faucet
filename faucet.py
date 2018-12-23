@@ -59,7 +59,7 @@ def hello(name=None):
     node = os.environ.get('EPOCH_URL', "https://sdk-testnet.aepps.com").replace("https://", "node@")
     node = f"{node} / {network_id}"
     explorer_url = os.environ.get("EXPLORER_URL", "https://testnet.explorer.aepps.com")
-    return render_template('index.html', amount=amount, node=node, explorer_url=explorer_url)
+    return render_template('index.html', amount=f"{amount/1000000000000000000:.0f}", node=node, explorer_url=explorer_url)
 
 
 @app.route('/account/<recipient_address>',  methods=['POST'])
@@ -80,12 +80,13 @@ def rest_faucet(recipient_address):
         Config.set_defaults(Config(
             external_url=os.environ.get('EPOCH_URL', "https://sdk-testnet.aepps.com"),
             internal_url=os.environ.get('EPOCH_URL_DEBUG', "https://sdk-testnet.aepps.com"),
-            network_id=os.environ.get('NETWORK_ID', "ae_uat")
+            network_id=os.environ.get('NETWORK_ID', "ae_uat"),
+
         ))
         # payload
         payload = os.environ.get('TX_PAYLOAD', "Faucet Tx")
         # execute the spend transaction
-        client = EpochClient()
+        client = EpochClient(blocking_mode=True)
         _, _, _, tx = client.spend(kp, recipient_address, amount, payload=payload, tx_ttl=ttl)
         balance = client.get_account_by_pubkey(pubkey=recipient_address).balance
         logging.info(f"Top up accont {recipient_address} of {amount} tx_ttl: {ttl} tx_hash: {tx} completed")

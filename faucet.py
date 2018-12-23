@@ -90,26 +90,39 @@ def rest_faucet(recipient_address):
         _, _, _, tx = client.spend(kp, recipient_address, amount, payload=payload, tx_ttl=ttl)
         balance = client.get_account_by_pubkey(pubkey=recipient_address).balance
         logging.info(f"Top up accont {recipient_address} of {amount} tx_ttl: {ttl} tx_hash: {tx} completed")
-
-        # telegram bot notifications
-        enable_telegaram = os.environ.get('TELEGRAM_API_TOKEN', False)
-        if enable_telegaram:
-            token = os.environ.get('TELEGRAM_API_TOKEN', None)
-            chat_id = os.environ.get('TELEGRAM_CHAT_ID', None)
-            node = os.environ.get('EPOCH_URL', "https://sdk-testnet.aepps.com").replace("https://", "")
-            if token is None or chat_id is None:
-                logging.warning(f"missing chat_id ({chat_id}) or token {token} for telegram integration")
-            bot = telegram.Bot(token=token)
-            bot.send_message(chat_id=chat_id,
-                             text=f"Account `{recipient_address}` credited with {amount_to_ae(amount)} tokens on `{node}`. (tx hash: `{tx}`)",
-                             parse_mode=telegram.ParseMode.MARKDOWN)
+        # notifications
+        node = os.environ.get('EPOCH_URL', "https://sdk-testnet.aepps.com").replace("https://", "")
+        notification_message = f"Account `{recipient_address}` credited with {amount_to_ae(amount)} tokens on `{node}`. (tx hash: `{tx}`)"
+        # return
         return jsonify({"tx_hash": tx, "balance": balance})
     except OpenAPIClientException as e:
         logging.error(f"Api error: top up accont {recipient_address} of {amount} failed with error", e)
+        # notifications
+        node = os.environ.get('EPOCH_URL', "https://sdk-testnet.aepps.com").replace("https://", "")
+        notification_message = f"Api error: top up accont {recipient_address} of {amount} on {node} failed with error {e}"
         return jsonify({"message": "The node is temporarily unavailable, please try again later"}), 503
     except Exception as e:
         logging.error(f"Generic error: top up accont {recipient_address} of {amount} failed with error", e)
+        # notifications
+        node = os.environ.get('EPOCH_URL', "https://sdk-testnet.aepps.com").replace("https://", "")
+        notification_message = f"Api error: top up accont {recipient_address} of {amount} on {node} failed with error {e}"
         return jsonify({"message": "Unknow error, please contact aepp-dev[at]aeternity.com"}), 500
+    finally:
+        try:
+            # telegram bot notifications
+            enable_telegaram = os.environ.get('TELEGRAM_API_TOKEN', False)
+            if enable_telegaram:
+                token = os.environ.get('TELEGRAM_API_TOKEN', None)
+                chat_id = os.environ.get('TELEGRAM_CHAT_ID', None)
+
+                if token is None or chat_id is None:
+                    logging.warning(f"missing chat_id ({chat_id}) or token {token} for telegram integration")
+                bot = telegram.Bot(token=token)
+                bot.send_message(chat_id=chat_id,
+                                 text=notification_message,
+                                 parse_mode=telegram.ParseMode.MARKDOWN)
+        except Exception as e:
+            logging.error(f"Error delivering notifications", e)
 
 
 #     ______  ____    ____  ______     ______

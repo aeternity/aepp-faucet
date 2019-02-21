@@ -88,7 +88,8 @@ def rest_faucet(recipient_address):
         payload = os.environ.get('TX_PAYLOAD', "Faucet Tx")
         # execute the spend transaction
         client = EpochClient(blocking_mode=True)
-        _, _, _, tx = client.spend(kp, recipient_address, amount, payload=payload, tx_ttl=ttl)
+        _, _, _, tx = client.spend(kp, recipient_address, amount, payload=payload, tx_ttl=ttl, fee=20000000000000)
+
         balance = client.get_account_by_pubkey(pubkey=recipient_address).balance
         logging.info(f"Top up accont {recipient_address} of {amount} tx_ttl: {ttl} tx_hash: {tx} completed")
         # notifications

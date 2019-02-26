@@ -6,7 +6,7 @@ import logging
 import argparse
 
 # flask
-from flask import Flask, jsonify, render_template
+from flask import Flask, jsonify, render_template, send_from_directory
 
 # aeternity
 from aeternity.epoch import EpochClient
@@ -31,14 +31,13 @@ formatter = logging.Formatter(
 ch.setFormatter(formatter)
 root.addHandler(ch)
 
-app = Flask(__name__)
+app = Flask(__name__, static_url_path='')
 
 logging.getLogger("aeternity.epoch").setLevel(logging.WARNING)
 # logging.getLogger("urllib3.connectionpool").setLevel(logging.WARNING)
 # logging.getLogger("engineio").setLevel(logging.ERROR)
 
 AE_UNIT = 1000000000000000000
-
 
 def amount_to_ae(val):
     return f"{val/AE_UNIT:.0f}AE"
@@ -60,6 +59,18 @@ def hello(name=None):
     node = f"{node} / {network_id}"
     explorer_url = os.environ.get("EXPLORER_URL", "https://testnet.explorer.aepps.com")
     return render_template('index.html', amount=f"{amount/1000000000000000000:.0f}", node=node, explorer_url=explorer_url)
+
+@app.route('/assets/scripts/<path:filename>')
+def serve_js(filename):
+    return send_from_directory('assets/scripts', filename)
+
+@app.route('/assets/styles/<path:filename>')
+def serve_css(filename):
+    return send_from_directory('assets/styles', filename)
+
+@app.route('/assets/images/<path:filename>')
+def serve_images(filename):
+    return send_from_directory('assets/images', filename)
 
 
 @app.route('/account/<recipient_address>',  methods=['POST'])

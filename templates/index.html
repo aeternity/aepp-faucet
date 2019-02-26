@@ -7,7 +7,7 @@
   <title>Faucet Aepp</title>
   <meta name="description" content="">
   <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-  <link href="https://cdn.jsdelivr.net/npm/tailwindcss/dist/tailwind.min.css" rel="stylesheet">
+  <link href="assets/styles/tailwind.min.css" rel="stylesheet">
 </head>
 
 <body class="h-screen flex content-center flex-wrap">
@@ -35,7 +35,7 @@
       var account = document.querySelector("#recipientAddress").value
       var resultEl = document.querySelector("#result")
       showResult(resultEl)
-      document.querySelector("#result").innerHTML = '<div class="flex flex-col"><img src="https://loading.io/spinners/infinity/index.infinity-rotate-cycle-loader.svg" class="inline-block"><div class="font-mono inline-block text-center mt-4">Adding {{ amount }} AE to:<br><strong class="mt-4 inline-block text-xs">' + account + '</strong></div></div></div>'
+      document.querySelector("#result").innerHTML = '<div class="flex flex-col"><img src="/assets/images/cycle-loader.svg" class="inline-block"><div class="font-mono inline-block text-center mt-4">Adding {{ amount }} AE to:<br><strong class="mt-4 inline-block text-xs">' + account + '</strong></div></div></div>'
       axios.post("/account/" + account)
         .then(function (response) {
           var linkToExplorer = '<strong>Added {{ amount }} AE!</strong><br>'
@@ -61,7 +61,7 @@
       }
     }
   </script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.18.0/axios.min.js"></script>
+  <script src="assets/scripts/axios.min.js"></script>
 
 </body>
 

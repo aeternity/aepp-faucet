@@ -68,6 +68,10 @@ def serve_js(filename):
 def serve_css(filename):
     return send_from_directory('assets/styles', filename)
 
+@app.route('/assets/images/<path:filename>')
+def serve_images(filename):
+    return send_from_directory('assets/images', filename)
+
 
 @app.route('/account/<recipient_address>',  methods=['POST'])
 def rest_faucet(recipient_address):

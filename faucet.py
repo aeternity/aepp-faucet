@@ -9,11 +9,9 @@ import argparse
 from flask import Flask, jsonify, render_template, send_from_directory
 
 # aeternity
-from aeternity.epoch import EpochClient
-from aeternity.signing import Account
+from aeternity import node, signing
 from aeternity.utils import is_valid_hash
 from aeternity.openapi import OpenAPIClientException
-from aeternity.config import Config
 
 # telegram
 import telegram
@@ -39,6 +37,7 @@ logging.getLogger("aeternity.epoch").setLevel(logging.WARNING)
 
 AE_UNIT = 1000000000000000000
 
+
 def amount_to_ae(val):
     return f"{val/AE_UNIT:.0f}AE"
 
@@ -55,18 +54,21 @@ def after_request(response):
 def hello(name=None):
     amount = int(os.environ.get('TOPUP_AMOUNT', 5000000000000000000))
     network_id = os.environ.get('NETWORK_ID', "ae_uat")
-    node = os.environ.get('EPOCH_URL', "https://sdk-testnet.aepps.com").replace("https://", "node@")
-    node = f"{node} / {network_id}"
+    node_url = os.environ.get('EPOCH_URL', "https://sdk-testnet.aepps.com").replace("https://", "node@")
+    node_url = f"{node_url} / {network_id}"
     explorer_url = os.environ.get("EXPLORER_URL", "https://testnet.explorer.aepps.com")
-    return render_template('index.html', amount=f"{amount/1000000000000000000:.0f}", node=node, explorer_url=explorer_url)
+    return render_template('index.html', amount=f"{amount/1000000000000000000:.0f}", node=node_url, explorer_url=explorer_url)
+
 
 @app.route('/assets/scripts/<path:filename>')
 def serve_js(filename):
     return send_from_directory('assets/scripts', filename)
 
+
 @app.route('/assets/styles/<path:filename>')
 def serve_css(filename):
     return send_from_directory('assets/styles', filename)
+
 
 @app.route('/assets/images/<path:filename>')
 def serve_images(filename):
@@ -77,37 +79,27 @@ def serve_images(filename):
 def rest_faucet(recipient_address):
     """top up an account"""
     amount = int(os.environ.get('TOPUP_AMOUNT', 5000000000000000000))
-    ttl = int(os.environ.get('TX_TTL', 100))
     try:
         # validate the address
         logging.info(f"Top up request for {recipient_address}")
         if not is_valid_hash(recipient_address, prefix='ak'):
             return jsonify({"message": "The provided account is not valid"}), 400
-
-        # genesys key
-        bank_wallet_key = os.environ.get('FAUCET_ACCOUNT_PRIV_KEY')
-        kp = Account.from_private_key_string(bank_wallet_key)
-        # target node
-        Config.set_defaults(Config(
-            external_url=os.environ.get('EPOCH_URL', "https://sdk-testnet.aepps.com"),
-            internal_url=os.environ.get('EPOCH_URL_DEBUG', "https://sdk-testnet.aepps.com"),
-            network_id=os.environ.get('NETWORK_ID', "ae_uat"),
-            force_compatibility=True,
-
-        ))
+        # sender account
+        sender = signing.Account.from_private_key_string(os.environ.get('FAUCET_ACCOUNT_PRIV_KEY'))
         # payload
         payload = os.environ.get('TX_PAYLOAD', "Faucet Tx")
         # execute the spend transaction
-        client = EpochClient(blocking_mode=True)
-        _, _, _, tx = client.spend(kp, recipient_address, amount, payload=payload, tx_ttl=ttl, fee=20000000000000)
-
+        client = app.config.get("node_client")
+        tx = client.spend(sender, recipient_address, amount, payload=payload)
+        # print the full transaction
         balance = client.get_account_by_pubkey(pubkey=recipient_address).balance
-        logging.info(f"Top up accont {recipient_address} of {amount} tx_ttl: {ttl} tx_hash: {tx} completed")
+        logging.info(f"Top up accont {recipient_address} of {amount} tx_hash: {tx.hash} completed")
+        logging.debug(f"tx: {tx.tx}")
         # notifications
         node = os.environ.get('EPOCH_URL', "https://sdk-testnet.aepps.com").replace("https://", "")
         notification_message = f"Account `{recipient_address}` credited with {amount_to_ae(amount)} tokens on `{node}`. (tx hash: `{tx}`)"
         # return
-        return jsonify({"tx_hash": tx, "balance": balance})
+        return jsonify({"tx_hash": tx.hash, "balance": balance})
     except OpenAPIClientException as e:
         logging.error(f"Api error: top up accont {recipient_address} of {amount} failed with error", e)
         # notifications
@@ -150,6 +142,13 @@ def rest_faucet(recipient_address):
 def cmd_start(args=None):
     root.addHandler(app.logger)
     logging.info("faucet service started")
+
+    app.config['node_client'] = node.NodeClient(config=node.Config(
+        external_url=os.environ.get('EPOCH_URL', "https://sdk-testnet.aepps.com"),
+        internal_url=os.environ.get('EPOCH_URL_DEBUG', "https://sdk-testnet.aepps.com"),
+        network_id=os.environ.get('NETWORK_ID', "ae_uat"),
+        force_compatibility=True,
+    ))
     app.run(host='0.0.0.0', port=5000)
 
 

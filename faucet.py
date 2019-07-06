@@ -6,17 +6,19 @@ import logging
 import argparse
 
 # flask
-from flask import Flask, jsonify, render_template
+from flask import Flask, jsonify, render_template, send_from_directory
 
 # aeternity
-from aeternity.epoch import EpochClient
-from aeternity.signing import Account
+from aeternity import node, signing
 from aeternity.utils import is_valid_hash
 from aeternity.openapi import OpenAPIClientException
-from aeternity.config import Config
 
 # telegram
 import telegram
+
+# caching
+from expiringdict import ExpiringDict
+from datetime import datetime, timedelta
 
 
 # also log to stdout because docker
@@ -31,11 +33,33 @@ formatter = logging.Formatter(
 ch.setFormatter(formatter)
 root.addHandler(ch)
 
-app = Flask(__name__)
+app = Flask(__name__, static_url_path='')
 
 logging.getLogger("aeternity.epoch").setLevel(logging.WARNING)
 # logging.getLogger("urllib3.connectionpool").setLevel(logging.WARNING)
 # logging.getLogger("engineio").setLevel(logging.ERROR)
+
+AE_UNIT = 1000000000000000000
+
+
+def amount_to_ae(val):
+    return f"{val/AE_UNIT:.0f}AE"
+
+
+def pretty_time_delta(start, end):
+    seconds = (start-end).total_seconds()
+    seconds = abs(int(seconds))
+    days, seconds = divmod(seconds, 86400)
+    hours, seconds = divmod(seconds, 3600)
+    minutes, seconds = divmod(seconds, 60)
+    if days > 0:
+        return '%dd%dh%dm%ds' % (days, hours, minutes, seconds)
+    elif hours > 0:
+        return '%dh%dm%ds' % (hours, minutes, seconds)
+    elif minutes > 0:
+        return '%dm%ds' % (minutes, seconds)
+    else:
+        return '%ds' % (seconds)
 
 
 @app.after_request
@@ -48,61 +72,92 @@ def after_request(response):
 
 @app.route('/')
 def hello(name=None):
-    amount = int(os.environ.get('TOPUP_AMOUNT', 250000000000000000000))
-    network_id = os.environ.get('NETWORK_ID', "ae_devnet")
-    node = os.environ.get('EPOCH_URL', "https://sdk-testnet.aepps.com").replace("https://", "node@")
-    node = f"{node} / {network_id}"
-    explorer_url = os.environ.get("EXPLORER_URL", "https://explorer.aepps.com")
-    return render_template('index.html', amount=amount, node=node, explorer_url=explorer_url)
+    amount = int(os.environ.get('TOPUP_AMOUNT', 5000000000000000000))
+    network_id = os.environ.get('NETWORK_ID', "ae_uat")
+    node_url = os.environ.get('EPOCH_URL', "https://sdk-testnet.aepps.com").replace("https://", "node@")
+    node_url = f"{node_url} / {network_id}"
+    explorer_url = os.environ.get("EXPLORER_URL", "https://testnet.explorer.aepps.com")
+    return render_template('index.html', amount=f"{amount/1000000000000000000:.0f}", node=node_url, explorer_url=explorer_url)
+
+
+@app.route('/assets/scripts/<path:filename>')
+def serve_js(filename):
+    return send_from_directory('assets/scripts', filename)
+
+
+@app.route('/assets/styles/<path:filename>')
+def serve_css(filename):
+    return send_from_directory('assets/styles', filename)
+
+
+@app.route('/assets/images/<path:filename>')
+def serve_images(filename):
+    return send_from_directory('assets/images', filename)
 
 
 @app.route('/account/<recipient_address>',  methods=['POST'])
 def rest_faucet(recipient_address):
     """top up an account"""
-    amount = int(os.environ.get('TOPUP_AMOUNT', 250))
-    ttl = int(os.environ.get('TX_TTL', 100))
+    amount = int(os.environ.get('TOPUP_AMOUNT', 5000000000000000000))
+    notification_message = ""
     try:
         # validate the address
         logging.info(f"Top up request for {recipient_address}")
         if not is_valid_hash(recipient_address, prefix='ak'):
-            return jsonify({"message": "The provided account is not valid"}), 400
-
-        # genesys key
-        bank_wallet_key = os.environ.get('FAUCET_ACCOUNT_PRIV_KEY')
-        kp = Account.from_private_key_string(bank_wallet_key)
-        # target node
-        Config.set_defaults(Config(
-            external_url=os.environ.get('EPOCH_URL', "https://sdk-testnet.aepps.com"),
-            internal_url=os.environ.get('EPOCH_URL_DEBUG', "https://sdk-testnet.aepps.com"),
-            network_id=os.environ.get('NETWORK_ID', "ae_devnet"),
-        ))
+            notification_message = "The provided account is not valid"
+            return jsonify({"message": notification_message}), 400
+        # check if the account is still in the cache
+        registration_date = app.config['address_cache'].get(recipient_address)
+        if registration_date is not None:
+            graylist_exp = registration_date + timedelta(seconds=app.config['cache_max_age'])
+            notification_message = f"The account {recipient_address} is graylisted for another {pretty_time_delta(graylist_exp, datetime.now())}"
+            msg = f"The account is graylisted for another {pretty_time_delta(graylist_exp, datetime.now())}"
+            return jsonify({"message": msg}), 425
+        app.config['address_cache'][recipient_address] = datetime.now()
+        # sender account
+        sender = signing.Account.from_private_key_string(os.environ.get('FAUCET_ACCOUNT_PRIV_KEY'))
         # payload
         payload = os.environ.get('TX_PAYLOAD', "Faucet Tx")
         # execute the spend transaction
-        client = EpochClient()
-        _, _, _, tx = client.spend(kp, recipient_address, amount, payload=payload, tx_ttl=ttl)
+        client = app.config.get("node_client")
+        tx = client.spend(sender, recipient_address, amount, payload=payload)
+        # print the full transaction
         balance = client.get_account_by_pubkey(pubkey=recipient_address).balance
-        logging.info(f"Top up accont {recipient_address} of {amount} tx_ttl: {ttl} tx_hash: {tx} completed")
-
-        # telegram bot notifications
-        enable_telegaram = os.environ.get('TELEGRAM_API_TOKEN', False)
-        if enable_telegaram:
-            token = os.environ.get('TELEGRAM_API_TOKEN', None)
-            chat_id = os.environ.get('TELEGRAM_CHAT_ID', None)
-            node = os.environ.get('EPOCH_URL', "https://sdk-testnet.aepps.com").replace("https://", "")
-            if token is None or chat_id is None:
-                logging.warning(f"missing chat_id ({chat_id}) or token {token} for telegram integration")
-            bot = telegram.Bot(token=token)
-            bot.send_message(chat_id=chat_id,
-                             text=f"Account `{recipient_address}` credited with {amount} tokens on `{node}`. (tx hash: `{tx}`)",
-                             parse_mode=telegram.ParseMode.MARKDOWN)
-        return jsonify({"tx_hash": tx, "balance": balance})
+        logging.info(f"Top up accont {recipient_address} of {amount} tx_hash: {tx.hash} completed")
+        logging.debug(f"tx: {tx.tx}")
+        # notifications
+        node = os.environ.get('EPOCH_URL', "https://sdk-testnet.aepps.com").replace("https://", "")
+        notification_message = f"Account `{recipient_address}` credited with {amount_to_ae(amount)} tokens on `{node}`. (tx hash: `{tx}`)"
+        # return
+        return jsonify({"tx_hash": tx.hash, "balance": balance})
     except OpenAPIClientException as e:
         logging.error(f"Api error: top up accont {recipient_address} of {amount} failed with error", e)
-        return jsonify({"message": "The node is temporarily unavailable, contact aepp-dev[at]aeternity.com"}), 503
+        # notifications
+        node = os.environ.get('EPOCH_URL', "https://sdk-testnet.aepps.com").replace("https://", "")
+        notification_message = f"Api error: top up accont {recipient_address} of {amount} on {node} failed with error {e}"
+        return jsonify({"message": "The node is temporarily unavailable, please try again later"}), 503
     except Exception as e:
         logging.error(f"Generic error: top up accont {recipient_address} of {amount} failed with error", e)
-        return jsonify({"message": "Unknow error, please contact contact aepp-dev[at]aeternity.com"}), 500
+        # notifications
+        node = os.environ.get('EPOCH_URL', "https://sdk-testnet.aepps.com").replace("https://", "")
+        notification_message = f"Api error: top up accont {recipient_address} of {amount} on {node} failed with error {e}"
+        return jsonify({"message": "Unknow error, please contact aepp-dev[at]aeternity.com"}), 500
+    finally:
+        try:
+            # telegram bot notifications
+            enable_telegaram = os.environ.get('TELEGRAM_API_TOKEN', False)
+            if enable_telegaram:
+                token = os.environ.get('TELEGRAM_API_TOKEN', None)
+                chat_id = os.environ.get('TELEGRAM_CHAT_ID', None)
+
+                if token is None or chat_id is None:
+                    logging.warning(f"missing chat_id ({chat_id}) or token {token} for telegram integration")
+                bot = telegram.Bot(token=token)
+                bot.send_message(chat_id=chat_id,
+                                 text=notification_message,
+                                 parse_mode=telegram.ParseMode.MARKDOWN)
+        except Exception as e:
+            logging.error(f"Error delivering notifications", e)
 
 
 #     ______  ____    ____  ______     ______
@@ -117,6 +172,20 @@ def rest_faucet(recipient_address):
 def cmd_start(args=None):
     root.addHandler(app.logger)
     logging.info("faucet service started")
+
+    app.config['node_client'] = node.NodeClient(config=node.Config(
+        external_url=os.environ.get('EPOCH_URL', "https://sdk-testnet.aepps.com"),
+        internal_url=os.environ.get('EPOCH_URL_DEBUG', "https://sdk-testnet.aepps.com"),
+        network_id=os.environ.get('NETWORK_ID', "ae_uat"),
+        blocking_mode=True,
+        force_compatibility=True,
+    ))
+    # instantiate the cache
+    max_len = int(os.environ.get('CACHE_MAX_SIZE', 6000))
+    max_age = int(os.environ.get('CACHE_MAX_AGE', 3600 * 4))  # default 4h
+    app.config['cache_max_age'] = max_age
+    app.config['address_cache'] = ExpiringDict(max_len=max_len, max_age_seconds=max_age)
+
     app.run(host='0.0.0.0', port=5000)
 
 

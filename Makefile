@@ -1,14 +1,16 @@
-GIT_DESCR = $(shell git describe --always) 
 # build output folder
 OUTPUTFOLDER = dist
 # docker image
 DOCKER_REGISTRY = 166568770115.dkr.ecr.eu-central-1.amazonaws.com/aeternity
 DOCKER_IMAGE = aepp-faucet
 K8S_DEPLOYMENT = aepp-faucet
+K8S_NAMESPACE = testnet
 DOCKER_TAG = $(shell git describe --always)
 # build paramters
 OS = linux
 ARCH = amd64
+# k8s parameters
+
 
 .PHONY: list
 list:
@@ -39,7 +41,7 @@ docker-push:
 
 deploy-k8s:
 	@echo deploy k8s
-	kubectl patch deployment $(K8S_DEPLOYMENT) --type='json' -p='[{"op": "replace", "path": "/spec/template/spec/containers/0/image", "value":"$(DOCKER_REGISTRY)/$(DOCKER_IMAGE):$(DOCKER_TAG)"}]'
+	kubectl -n $(K8S_NAMESPACE)  patch deployment $(K8S_DEPLOYMENT) --type='json' -p='[{"op": "replace", "path": "/spec/template/spec/containers/0/image", "value":"$(DOCKER_REGISTRY)/$(DOCKER_IMAGE):$(DOCKER_TAG)"}]'
 	@echo deploy k8s done
 
 

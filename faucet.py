@@ -16,6 +16,10 @@ from aeternity.openapi import OpenAPIClientException
 # telegram
 import telegram
 
+# caching
+from expiringdict import ExpiringDict
+from datetime import datetime, timedelta
+
 
 # also log to stdout because docker
 root = logging.getLogger()
@@ -40,6 +44,22 @@ AE_UNIT = 1000000000000000000
 
 def amount_to_ae(val):
     return f"{val/AE_UNIT:.0f}AE"
+
+
+def pretty_time_delta(start, end):
+    seconds = (start-end).total_seconds()
+    seconds = abs(int(seconds))
+    days, seconds = divmod(seconds, 86400)
+    hours, seconds = divmod(seconds, 3600)
+    minutes, seconds = divmod(seconds, 60)
+    if days > 0:
+        return '%dd%dh%dm%ds' % (days, hours, minutes, seconds)
+    elif hours > 0:
+        return '%dh%dm%ds' % (hours, minutes, seconds)
+    elif minutes > 0:
+        return '%dm%ds' % (minutes, seconds)
+    else:
+        return '%ds' % (seconds)
 
 
 @app.after_request
@@ -79,11 +99,21 @@ def serve_images(filename):
 def rest_faucet(recipient_address):
     """top up an account"""
     amount = int(os.environ.get('TOPUP_AMOUNT', 5000000000000000000))
+    notification_message = ""
     try:
         # validate the address
         logging.info(f"Top up request for {recipient_address}")
         if not is_valid_hash(recipient_address, prefix='ak'):
-            return jsonify({"message": "The provided account is not valid"}), 400
+            notification_message = "The provided account is not valid"
+            return jsonify({"message": notification_message}), 400
+        # check if the account is still in the cache
+        registration_date = app.config['address_cache'].get(recipient_address)
+        if registration_date is not None:
+            graylist_exp = registration_date + timedelta(seconds=app.config['cache_max_age'])
+            notification_message = f"The account {recipient_address} is graylisted for another {pretty_time_delta(graylist_exp, datetime.now())}"
+            msg = f"The account is graylisted for another {pretty_time_delta(graylist_exp, datetime.now())}"
+            return jsonify({"message": msg}), 425
+        app.config['address_cache'][recipient_address] = datetime.now()
         # sender account
         sender = signing.Account.from_private_key_string(os.environ.get('FAUCET_ACCOUNT_PRIV_KEY'))
         # payload
@@ -147,8 +177,15 @@ def cmd_start(args=None):
         external_url=os.environ.get('EPOCH_URL', "https://sdk-testnet.aepps.com"),
         internal_url=os.environ.get('EPOCH_URL_DEBUG', "https://sdk-testnet.aepps.com"),
         network_id=os.environ.get('NETWORK_ID', "ae_uat"),
+        blocking_mode=True,
         force_compatibility=True,
     ))
+    # instantiate the cache
+    max_len = int(os.environ.get('CACHE_MAX_SIZE', 6000))
+    max_age = int(os.environ.get('CACHE_MAX_AGE', 3600 * 4))  # default 4h
+    app.config['cache_max_age'] = max_age
+    app.config['address_cache'] = ExpiringDict(max_len=max_len, max_age_seconds=max_age)
+
     app.run(host='0.0.0.0', port=5000)
 
 

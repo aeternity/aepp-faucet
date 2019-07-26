@@ -1,12 +1,11 @@
 #!/usr/bin/env python3
 
 import os
-import sys
-import logging
 import argparse
 
 # flask
 from flask import Flask, jsonify, render_template, send_from_directory
+from waitress import serve
 
 # aeternity
 from aeternity import node, signing
@@ -21,23 +20,14 @@ from expiringdict import ExpiringDict
 from datetime import datetime, timedelta
 
 
-# also log to stdout because docker
-root = logging.getLogger()
-root.setLevel(logging.INFO)
-
-ch = logging.StreamHandler(sys.stdout)
-ch.setLevel(logging.INFO)
-formatter = logging.Formatter(
-    '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-
-ch.setFormatter(formatter)
-root.addHandler(ch)
-
 app = Flask(__name__, static_url_path='')
 
-logging.getLogger("aeternity.epoch").setLevel(logging.WARNING)
-# logging.getLogger("urllib3.connectionpool").setLevel(logging.WARNING)
-# logging.getLogger("engineio").setLevel(logging.ERROR)
+# also log to stdout because docker
+# ch = logging.StreamHandler(sys.stdout)
+# ch.setLevel(logging.INFO)
+# formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+# ch.setFormatter(formatter)
+# app.logger.addHandler(ch)
 
 AE_UNIT = 1000000000000000000
 
@@ -102,7 +92,7 @@ def rest_faucet(recipient_address):
     notification_message = ""
     try:
         # validate the address
-        logging.info(f"Top up request for {recipient_address}")
+        app.logger.info(f"Top up request for {recipient_address}")
         if not is_valid_hash(recipient_address, prefix='ak'):
             notification_message = "The provided account is not valid"
             return jsonify({"message": notification_message}), 400
@@ -123,21 +113,21 @@ def rest_faucet(recipient_address):
         tx = client.spend(sender, recipient_address, amount, payload=payload)
         # print the full transaction
         balance = client.get_account_by_pubkey(pubkey=recipient_address).balance
-        logging.info(f"Top up accont {recipient_address} of {amount} tx_hash: {tx.hash} completed")
-        logging.debug(f"tx: {tx.tx}")
+        app.logger.info(f"Top up accont {recipient_address} of {amount} tx_hash: {tx.hash} completed")
+        app.logger.debug(f"tx: {tx.tx}")
         # notifications
         node = os.environ.get('EPOCH_URL', "https://sdk-testnet.aepps.com").replace("https://", "")
         notification_message = f"Account `{recipient_address}` credited with {amount_to_ae(amount)} tokens on `{node}`. (tx hash: `{tx}`)"
         # return
         return jsonify({"tx_hash": tx.hash, "balance": balance})
     except OpenAPIClientException as e:
-        logging.error(f"Api error: top up accont {recipient_address} of {amount} failed with error", e)
+        app.logger.error(f"Api error: top up accont {recipient_address} of {amount} failed with error", e)
         # notifications
         node = os.environ.get('EPOCH_URL', "https://sdk-testnet.aepps.com").replace("https://", "")
         notification_message = f"Api error: top up accont {recipient_address} of {amount} on {node} failed with error {e}"
         return jsonify({"message": "The node is temporarily unavailable, please try again later"}), 503
     except Exception as e:
-        logging.error(f"Generic error: top up accont {recipient_address} of {amount} failed with error", e)
+        app.logger.error(f"Generic error: top up accont {recipient_address} of {amount} failed with error", e)
         # notifications
         node = os.environ.get('EPOCH_URL', "https://sdk-testnet.aepps.com").replace("https://", "")
         notification_message = f"Api error: top up accont {recipient_address} of {amount} on {node} failed with error {e}"
@@ -151,13 +141,13 @@ def rest_faucet(recipient_address):
                 chat_id = os.environ.get('TELEGRAM_CHAT_ID', None)
 
                 if token is None or chat_id is None:
-                    logging.warning(f"missing chat_id ({chat_id}) or token {token} for telegram integration")
+                    app.logger.warning(f"missing chat_id ({chat_id}) or token {token} for telegram integration")
                 bot = telegram.Bot(token=token)
                 bot.send_message(chat_id=chat_id,
                                  text=notification_message,
                                  parse_mode=telegram.ParseMode.MARKDOWN)
         except Exception as e:
-            logging.error(f"Error delivering notifications", e)
+            app.logger.error(f"Error delivering notifications", e)
 
 
 #     ______  ____    ____  ______     ______
@@ -170,8 +160,8 @@ def rest_faucet(recipient_address):
 
 
 def cmd_start(args=None):
-    root.addHandler(app.logger)
-    logging.info("faucet service started")
+    
+    app.logger.info("faucet service started")
 
     app.config['node_client'] = node.NodeClient(config=node.Config(
         external_url=os.environ.get('EPOCH_URL', "https://sdk-testnet.aepps.com"),
@@ -186,14 +176,15 @@ def cmd_start(args=None):
     app.config['cache_max_age'] = max_age
     app.config['address_cache'] = ExpiringDict(max_len=max_len, max_age_seconds=max_age)
 
-    app.run(host='0.0.0.0', port=5000)
+    serve(app, host='0.0.0.0', port=5000)
 
 
 if __name__ == '__main__':
-    cmds = [
+    commands = [
         {
             'name': 'start',
             'help': 'start the top up service',
+            'target': cmd_start,
             'opts': []
         }
     ]
@@ -202,17 +193,17 @@ if __name__ == '__main__':
     subparsers.required = True
     subparsers.dest = 'command'
     # register all the commands
-    for c in cmds:
-        subp = subparsers.add_parser(c['name'], help=c['help'])
+    for c in commands:
+        subparser = subparsers.add_parser(c['name'], help=c['help'])
+        subparser.set_defaults(func=c['target'])
         # add the sub arguments
         for sa in c.get('opts', []):
-            subp.add_argument(*sa['names'],
-                              help=sa['help'],
-                              action=sa.get('action'),
-                              default=sa.get('default'))
+            subparser.add_argument(*sa['names'],
+                                   help=sa['help'],
+                                   action=sa.get('action'),
+                                   default=sa.get('default'))
 
     # parse the arguments
     args = parser.parse_args()
-    # call the command with our args
-    ret = getattr(sys.modules[__name__], 'cmd_{0}'.format(
-        args.command.replace('-', '_')))(args)
+    # call the function
+    args.func(args)

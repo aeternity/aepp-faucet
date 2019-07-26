@@ -110,7 +110,7 @@ def rest_faucet(recipient_address):
         registration_date = app.config['address_cache'].get(recipient_address)
         if registration_date is not None:
             graylist_exp = registration_date + timedelta(seconds=app.config['cache_max_age'])
-            notification_message = f"The account {recipient_address} is graylisted for another {pretty_time_delta(graylist_exp, datetime.now())}"
+            notification_message = f"The account `{recipient_address}` is graylisted for another {pretty_time_delta(graylist_exp, datetime.now())}"
             msg = f"The account is graylisted for another {pretty_time_delta(graylist_exp, datetime.now())}"
             return jsonify({"message": msg}), 425
         app.config['address_cache'][recipient_address] = datetime.now()

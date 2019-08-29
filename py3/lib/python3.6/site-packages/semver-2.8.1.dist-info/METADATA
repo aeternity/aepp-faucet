@@ -1,0 +1,58 @@
+Metadata-Version: 2.1
+Name: semver
+Version: 2.8.1
+Summary: Python helper for Semantic Versioning (http://semver.org/)
+Home-page: https://github.com/k-bx/python-semver
+Author: Kostiantyn Rybnikov
+Author-email: k-bx@k-bx.com
+License: BSD
+Download-URL: https://github.com/k-bx/python-semver/downloads
+Platform: UNKNOWN
+Classifier: Environment :: Web Environment
+Classifier: Intended Audience :: Developers
+Classifier: License :: OSI Approved :: BSD License
+Classifier: Operating System :: OS Independent
+Classifier: Programming Language :: Python
+Classifier: Programming Language :: Python :: 2
+Classifier: Programming Language :: Python :: 2.7
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.2
+Classifier: Programming Language :: Python :: 3.3
+Classifier: Programming Language :: Python :: 3.4
+Classifier: Programming Language :: Python :: 3.5
+Classifier: Programming Language :: Python :: 3.6
+Classifier: Topic :: Software Development :: Libraries :: Python Modules
+
+Semver |latest-version|
+=======================
+
+|build-status| |python-support| |downloads| |license| |docs|
+
+A Python module for `semantic versioning`_. Simplifies comparing versions.
+
+
+.. |latest-version| image:: https://img.shields.io/pypi/v/semver.svg
+   :alt: Latest version on PyPI
+   :target: https://pypi.org/project/semver
+.. |build-status| image:: https://travis-ci.org/k-bx/python-semver.svg?branch=master
+   :alt: Build status
+   :target: https://travis-ci.org/k-bx/python-semver
+.. |python-support| image:: https://img.shields.io/pypi/pyversions/semver.svg
+   :target: https://pypi.org/project/semver
+   :alt: Python versions
+.. |downloads| image:: https://img.shields.io/pypi/dm/semver.svg
+   :alt: Monthly downloads from PyPI
+   :target: https://pypi.org/project/semver
+.. |license| image:: https://img.shields.io/pypi/l/semver.svg
+   :alt: Software license
+   :target: https://github.com/k-bx/python-semver/blob/master/LICENSE.txt
+.. |docs| image:: https://readthedocs.org/projects/python-semver/badge/?version=latest
+   :target: http://python-semver.readthedocs.io/en/latest/?badge=latest
+   :alt: Documentation Status
+.. _semantic versioning: http://semver.org/
+
+Documentation
+-------------
+|docs|
+
+

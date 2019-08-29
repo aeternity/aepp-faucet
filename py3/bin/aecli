@@ -1,0 +1,3 @@
+#!/Users/ricucit/Documents/workspaces/blockchain/aeternity/aepp-faucet/py3/bin/python3
+
+from aeternity import __main__

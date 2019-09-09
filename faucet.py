@@ -131,7 +131,7 @@ def rest_faucet(recipient_address):
         # notifications
         node = os.environ.get('EPOCH_URL', "https://sdk-testnet.aepps.com").replace("https://", "")
         notification_message = f"Api error: top up accont {recipient_address} of {amount} on {node} failed with error {e}"
-        return jsonify({"message": "Unknow error, please contact aepp-dev[at]aeternity.com"}), 500
+        return jsonify({"message": "Unknow error, please contact <a href=\"mailto:aepp-dev@aeternity.com\" class=\"hover:text-pink-lighter\">aepp-dev@aeternity.com</a>"}), 500
     finally:
         try:
             # telegram bot notifications
@@ -160,7 +160,7 @@ def rest_faucet(recipient_address):
 
 
 def cmd_start(args=None):
-    
+
     app.logger.info("faucet service started")
 
     app.config['node_client'] = node.NodeClient(config=node.Config(

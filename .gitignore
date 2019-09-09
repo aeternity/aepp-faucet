@@ -1,3 +1,5 @@
 .envrc
 node_modules
 test-account
+.vscode
+py3

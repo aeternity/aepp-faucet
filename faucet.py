@@ -5,6 +5,7 @@ import argparse
 
 # flask
 from flask import Flask, jsonify, render_template, send_from_directory
+from flask_cors import cross_origin
 from waitress import serve
 
 # aeternity
@@ -21,6 +22,7 @@ from datetime import datetime, timedelta
 
 
 app = Flask(__name__, static_url_path='')
+
 
 # also log to stdout because docker
 # ch = logging.StreamHandler(sys.stdout)
@@ -86,6 +88,7 @@ def serve_images(filename):
 
 
 @app.route('/account/<recipient_address>',  methods=['POST'])
+@cross_origin()
 def rest_faucet(recipient_address):
     """top up an account"""
     amount = int(os.environ.get('TOPUP_AMOUNT', 5000000000000000000))
@@ -160,9 +163,7 @@ def rest_faucet(recipient_address):
 
 
 def cmd_start(args=None):
-
     app.logger.info("faucet service started")
-
     app.config['node_client'] = node.NodeClient(config=node.Config(
         external_url=os.environ.get('EPOCH_URL', "https://sdk-testnet.aepps.com"),
         internal_url=os.environ.get('EPOCH_URL_DEBUG', "https://sdk-testnet.aepps.com"),

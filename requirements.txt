@@ -1,4 +1,4 @@
-aepp_sdk==4.0.0
+aepp_sdk==4.2.0
 Flask==1.1.1
 python-telegram-bot==11.1.0
 expiringdict==1.1.4

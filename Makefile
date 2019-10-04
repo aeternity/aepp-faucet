@@ -45,8 +45,8 @@ deploy-k8s:
 	@echo deploy k8s done
 
 
-docker-run: 
-	@docker run -p 5000:5000 $(DOCKER_IMAGE) 
+docker-run:
+	@docker run -p 5000:5000 $(DOCKER_IMAGE)
 
 debug-start:
 	. .envrc

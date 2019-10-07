@@ -22,3 +22,14 @@ Configuring Faucet application via enviornment variable:
 - `TELEGRAM_ENABLED` enable telegram notifications
 - `TELEGRAM_API_TOKEN` the token of the telegram bot
 - `TELEGRAM_CHAT_ID` the chat id to send notifications to
+
+## Front-End Development
+
+1. Run `npm i` from the root of the project
+2. Run `npm run dev` to start webpack
+
+
+### Dev notes:
+- All the Front-End resources are in `/src/`
+- Run `npm run prod` to compile assets for production
+- Compiled assets (`prod` or `dev`) will be created in `/assets/`

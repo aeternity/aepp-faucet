@@ -29,6 +29,8 @@ clean:
 
 docker-build:
 	@echo build image
+	npm install
+	npm run prod
 	docker build -t $(DOCKER_IMAGE) -f Dockerfile .
 	@echo done
 
@@ -39,10 +41,16 @@ docker-push:
 	docker push $(DOCKER_REGISTRY)/$(DOCKER_IMAGE):$(DOCKER_TAG)
 	@echo done
 
-deploy-k8s:
+k8s-deploy:
 	@echo deploy k8s
-	kubectl -n $(K8S_NAMESPACE)  patch deployment $(K8S_DEPLOYMENT) --type='json' -p='[{"op": "replace", "path": "/spec/template/spec/containers/0/image", "value":"$(DOCKER_REGISTRY)/$(DOCKER_IMAGE):$(DOCKER_TAG)"}]'
-	@echo deploy k8s done
+	kubectl -n $(K8S_NAMESPACE) set image deployment/$(K8S_DEPLOYMENT) $(DOCKER_IMAGE)=$(DOCKER_REGISTRY)/$(DOCKER_IMAGE):$(DOCKER_TAG)
+	@echo done
+
+k8s-rollback:
+	@echo deploy k8s
+	kubectl -n $(K8S_NAMESPACE) rollout undo deployment/$(K8S_DEPLOYMENT)
+	@echo done
+
 
 
 docker-run:

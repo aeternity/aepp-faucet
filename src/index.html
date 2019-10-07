@@ -15,8 +15,10 @@
     <h1 class="text-center text-grey-lighter text-3xl font-medium">
       🚰 <br/><a class="text-pink-lighter no-underline hover:underline" href="https://aeternity.com">Æternity Blockchain</a>'s Faucet Aepp
     </h1>
-    <h5 class="text-center text-grey-light">{{ node }}</h5>
+    <h5 class="text-center text-grey-light"><a href="{{ explorer_url }}">{{ node }}</a></h5>
     <form id="faucetForm" class="mt-8">
+      <input type="hidden" id="explorer_url" value="{{ explorer_url }}"></input>
+      <input type="hidden" id="topup_amount" value="{{ amount }}"></input>
       <input class="border rounded-l appearance-none w-2/3 py-2 px-4 text-purple-darker h-12 float-left font-mono shadow
                     lg:px-6" type="text" id="recipientAddress" placeholder="ak_YOUrPubl1ckeyh4sHh3r3">
       <input class="rounded-r w-1/3 bg-purple-dark outline-none text-white py-2 px-4  h-12 text-pink-lighter hover:underline hover:bg-purple-darker  shadow

@@ -9,7 +9,7 @@ from waitress import serve
 
 # aeternity
 from aeternity import node, signing
-from aeternity.utils import is_valid_hash
+from aeternity.utils import is_valid_hash, format_amount
 from aeternity.openapi import OpenAPIClientException
 
 # telegram
@@ -65,9 +65,9 @@ def hello(name=None):
     amount = int(os.environ.get('TOPUP_AMOUNT', 5000000000000000000))
     network_id = os.environ.get('NETWORK_ID', "ae_uat")
     node_url = os.environ.get('EPOCH_URL', "https://sdk-testnet.aepps.com").replace("https://", "node@")
-    node_url = f"{node_url} / {network_id}"
+    node_url = node_url
     explorer_url = os.environ.get("EXPLORER_URL", "https://testnet.explorer.aepps.com")
-    return render_template('index.html', amount=f"{amount/1000000000000000000:.0f}", node=node_url, explorer_url=explorer_url)
+    return render_template('index.html', amount=f"{format_amount(amount)}", node=node_url, explorer_url=explorer_url)
 
 
 @app.route('/assets/scripts/<path:filename>')
@@ -117,7 +117,7 @@ def rest_faucet(recipient_address):
         app.logger.debug(f"tx: {tx.tx}")
         # notifications
         node = os.environ.get('EPOCH_URL', "https://sdk-testnet.aepps.com").replace("https://", "")
-        notification_message = f"Account `{recipient_address}` credited with {amount_to_ae(amount)} tokens on `{node}`. (tx hash: `{tx}`)"
+        notification_message = f"Account `{recipient_address}` credited with {format_amount(amount)} tokens on `{node}`. (tx hash: `{tx}`)"
         # return
         return jsonify({"tx_hash": tx.hash, "balance": balance})
     except OpenAPIClientException as e:

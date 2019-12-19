@@ -1,7 +1,7 @@
 # build output folder
 OUTPUTFOLDER = dist
 # docker image
-DOCKER_REGISTRY = 166568770115.dkr.ecr.eu-central-1.amazonaws.com/aeternity
+DOCKER_REGISTRY = apeunit
 DOCKER_IMAGE = aepp-faucet
 K8S_DEPLOYMENT = aepp-faucet
 K8S_NAMESPACE = testnet

@@ -1,24 +1,24 @@
 import axios from 'axios'
+const AMOUNT = 5
+const EXPLORER_URL = 'https://sdk-testnet.aepps.com'
 
 document.querySelector('#faucetForm').addEventListener('submit', (event) => {
   event.preventDefault()
   const account = document.querySelector('#recipientAddress').value
   const resultEl = document.querySelector('#result')
-  const explorerUrl = document.querySelector('#explorer_url').value
-  const topupAmount = document.querySelector('#topup_amount').value
   showResult(resultEl)
   document.querySelector('#result').innerHTML = ` <div class="flex flex-col">
                                                     <img src="/assets/images/cycle-loader.svg" class="inline-block">
-                                                    <div class="font-mono inline-block text-center mt-4">Adding ${topupAmount} AE to:<br>
+                                                    <div class="font-mono inline-block text-center mt-4">Adding ${AMOUNT} AE to:<br>
                                                       <strong class="mt-4 inline-block text-xs">${account}</strong>
                                                     </div>
                                                   </div>`
   axios.post('/account/' + account)
     .then(function (response) {
-      resultEl.innerHTML = `<strong>Added ${topupAmount} AE!</strong><br>
+      resultEl.innerHTML = `<strong>Added ${AMOUNT} AE!</strong><br>
       <br>Current Balance: <strong> ${(response.data.balance / 1000000000000000000)} AE </strong><br>
-      <br>Transaction: <a class="text-purple font-mono text-xs" href="${explorerUrl}/transactions/${response.data.tx_hash}" target="_blank">${response.data.tx_hash}</a><br>
-      <br>Account: <a class="text-purple font-mono text-xs" href="${explorerUrl}/account/transactions/${account}" target="_blank">${account}</a>`
+      <br>Transaction: <a class="text-purple font-mono text-xs" href="${EXPLORER_URL}/#/tx/${response.data.tx_hash}" target="_blank">${response.data.tx_hash}</a><br>
+      <br>Account: <a class="text-purple font-mono text-xs" href="${EXPLORER_URL}/#/account/${account}" target="_blank">${account}</a>`
     })
     .catch(function (error) {
       resultEl.innerHTML = `Something went wrong. ¯\\_(ツ)_/¯  <br>

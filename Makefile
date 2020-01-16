@@ -1,11 +1,11 @@
 # build output folder
 OUTPUTFOLDER = dist
 # docker image
-DOCKER_REGISTRY = 166568770115.dkr.ecr.eu-central-1.amazonaws.com/aeternity
-DOCKER_IMAGE = aepp-faucet
-K8S_DEPLOYMENT = aepp-faucet
-K8S_NAMESPACE = testnet
-DOCKER_TAG = $(shell git describe --always)
+DOCKER_REGISTRY ?= docker.io
+DOCKER_IMAGE ?= aeternity/aepp-faucet
+K8S_DEPLOYMENT ?= aepp-faucet
+K8S_NAMESPACE ?= testnet
+DOCKER_TAG ?= $(shell git describe --always)
 # build paramters
 OS = linux
 ARCH = amd64
@@ -32,10 +32,12 @@ docker-build:
 	docker build -t $(DOCKER_IMAGE) -f Dockerfile .
 	@echo done
 
+docker-login-ecr:
+	aws ecr get-login --no-include-email --region eu-central-1 --profile aeternity-sdk | sh
+
 docker-push:
 	@echo push image
 	docker tag $(DOCKER_IMAGE) $(DOCKER_REGISTRY)/$(DOCKER_IMAGE):$(DOCKER_TAG)
-	aws ecr get-login --no-include-email --region eu-central-1 --profile aeternity-sdk | sh
 	docker push $(DOCKER_REGISTRY)/$(DOCKER_IMAGE):$(DOCKER_TAG)
 	@echo done
 

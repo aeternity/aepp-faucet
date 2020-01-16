@@ -24,7 +24,7 @@ lint-all:
 
 clean:
 	@echo remove $(OUTPUTFOLDER) folder
-	@rm -rf dist
+	@rm -rf assets
 	@echo done
 
 docker-build:

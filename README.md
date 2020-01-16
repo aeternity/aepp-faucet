@@ -19,8 +19,7 @@ Configuring Faucet application via enviornment variable:
 
 ### Telegram integration
 
-- `TELEGRAM_ENABLED` enable telegram notifications
-- `TELEGRAM_API_TOKEN` the token of the telegram bot
+- `TELEGRAM_API_TOKEN` the token of the telegram bot. Disables the integration if not set. (Default value "not set")
 - `TELEGRAM_CHAT_ID` the chat id to send notifications to
 
 ## Front-End Development

@@ -37,9 +37,6 @@ docker-build:
 	docker build -t $(DOCKER_IMAGE) -f Dockerfile .
 	@echo done
 
-docker-login-ecr:
-	aws ecr get-login --no-include-email --region eu-central-1 --profile aeternity-sdk | sh
-
 docker-push:
 	@echo push image
 	docker tag $(DOCKER_IMAGE) $(DOCKER_REGISTRY)/$(DOCKER_IMAGE):$(DOCKER_TAG)

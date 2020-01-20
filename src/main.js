@@ -17,8 +17,8 @@ document.querySelector('#faucetForm').addEventListener('submit', (event) => {
   axios.post('/account/' + account)
     .then(function (response) {
       resultEl.innerHTML = `<strong>Added ${amount}!</strong><br>
-      <br>Transaction: <a class="text-purple font-mono text-xs" href="${explorerURL}/account/transactions/${response.data.tx_hash}" target="_blank">${response.data.tx_hash}</a><br>
-      <br>Account: <a class="text-purple font-mono text-xs" href="${explorerURL}/transactions/${account}" target="_blank">${account}</a>
+      <br>Transaction: <a class="text-purple font-mono text-xs" href="${explorerURL}/transactions/${response.data.tx_hash}" target="_blank">${response.data.tx_hash}</a><br>
+      <br>Account: <a class="text-purple font-mono text-xs" href="${explorerURL}/account/transactions/${account}" target="_blank">${account}</a>
       <br>Balance: <strong> ${(response.data.balance / 1000000000000000000)} AE </strong><br>`
     })
     .catch(function (error) {

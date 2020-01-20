@@ -1,30 +1,27 @@
+# front-end build
 FROM node:13 AS frontend
 
 COPY . /app
 WORKDIR /app
 
-RUN npm install 
-RUN npm run prod
+RUN npm install && npm run prod
 
 # actual build
-FROM python:3-slim-stretch
-
-
 FROM python:3-slim-stretch
 
 RUN apt-get update && apt-get install -y \
 netbase \
 build-essential
 
-COPY . /data/
 # copy generated assets
-COPY --from=frontend /app/assets/ /data/assets
+COPY --from=frontend /app/assets /app/assets
 # copy generated index page
-COPY --from=frontend /app/templates/ /data/templates
-# install dependencies
-RUN pip install -r /data/requirements.txt
+COPY --from=frontend /app/templates /app/templates
+# copy python files
+COPY faucet.py /app/
+COPY requirements.txt /app/
+RUN pip install -r /app/requirements.txt
 
-COPY faucet.py /data/
-
-ENTRYPOINT [ "python", "/data/faucet.py"]
+# run the app
+ENTRYPOINT [ "python", "/app/faucet.py"]
 CMD [ "start"]

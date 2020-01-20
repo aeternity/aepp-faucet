@@ -1,11 +1,13 @@
-FROM node:lts-alpine as nodebuilder
+FROM node:13 AS frontend
 
-# Add required files to download and compile only the dependencies
-COPY src /build/src
-COPY templates /build/templates
-COPY package-lock.json package.json *.config.js /build/
+COPY . /app
+WORKDIR /app
 
-RUN cd /build && npm install && npm run prod
+RUN npm install 
+RUN npm run prod
+
+# actual build
+FROM python:3-slim-stretch
 
 
 FROM python:3-slim-stretch
@@ -14,10 +16,12 @@ RUN apt-get update && apt-get install -y \
 netbase \
 build-essential
 
-COPY --from=nodebuilder /build/assets /data/assets
-COPY --from=nodebuilder /build/templates /data/templates
-
-COPY requirements.txt /data/
+COPY . /data/
+# copy generated assets
+COPY --from=frontend /app/assets/ /data/assets
+# copy generated index page
+COPY --from=frontend /app/templates/ /data/templates
+# install dependencies
 RUN pip install -r /data/requirements.txt
 
 COPY faucet.py /data/

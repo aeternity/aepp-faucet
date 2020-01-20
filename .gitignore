@@ -1,5 +1,8 @@
 .envrc
 node_modules
+__pycache__
 test-account
 .vscode
 py3
+assets
+templates

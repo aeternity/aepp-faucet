@@ -10,7 +10,7 @@ from waitress import serve
 
 # aeternity
 from aeternity import node, signing
-from aeternity.utils import is_valid_hash, format_amount
+from aeternity.utils import is_valid_hash, format_amount, amount_to_aettos
 from aeternity.openapi import OpenAPIClientException
 
 # telegram
@@ -20,22 +20,43 @@ import telegram
 from expiringdict import ExpiringDict
 from datetime import datetime, timedelta
 
+# logging
+from logging.config import dictConfig
+
+dictConfig({
+    'version': 1,
+    'formatters': {'default': {
+        'format': '[%(asctime)s] %(levelname)s in %(module)s: %(message)s',
+    }},
+    'handlers': {'wsgi': {
+        'class': 'logging.StreamHandler',
+        'stream': 'ext://sys.stdout',
+        'formatter': 'default'
+    }},
+    'root': {
+        'level': 'INFO',
+        'handlers': ['wsgi']
+    }
+})
 
 app = Flask(__name__, static_url_path='')
 
-
-# also log to stdout because docker
-# ch = logging.StreamHandler(sys.stdout)
-# ch.setLevel(logging.INFO)
-# formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-# ch.setFormatter(formatter)
-# app.logger.addHandler(ch)
-
-AE_UNIT = 1000000000000000000
-
-
-def amount_to_ae(val):
-    return f"{val/AE_UNIT:.0f}AE"
+# environment var
+FAUCET_ACCOUNT_PRIV_KEY = os.environ.get("FAUCET_ACCOUNT_PRIV_KEY")
+TOPUP_AMOUNT = amount_to_aettos(os.environ.get("TOPUP_AMOUNT", "5AE"))
+SPEND_TX_PAYLOAD = os.environ.get("SPEND_TX_PAYLOAD", "Faucet Tx")
+NODE_URL = os.environ.get("NODE_URL", "https://testnet.aeternity.io")
+EXPLORER_URL = os.environ.get("EXPLORER_URL", "https://testnet.aeternal.io")
+SUPPORT_EMAIL = os.environ.get("SUPPORT_EMAIL", "aepp-dev@aeternity.com")
+# telegram notifications
+TELEGRAM_API_TOKEN = os.environ.get('TELEGRAM_API_TOKEN', False)
+TELEGRAM_CHAT_ID = os.environ.get('TELEGRAM_CHAT_ID')
+# graylisting
+CACHE_MAX_SIZE = int(os.environ.get('CACHE_MAX_SIZE', 6000))
+CACHE_MAX_AGE = int(os.environ.get('CACHE_MAX_AGE', 3600 * 4))  # default 4h
+# Server
+SERVER_LISTEN_ADDRESS = os.environ.get("SERVER_LISTEN_ADDRESS", "0.0.0.0")
+SERVER_LISTEN_PORT = int(os.environ.get("SERVER_LISTEN_PORT", 5000))
 
 
 def pretty_time_delta(start, end):
@@ -64,12 +85,7 @@ def after_request(response):
 
 @app.route('/')
 def hello(name=None):
-    amount = int(os.environ.get('TOPUP_AMOUNT', 5000000000000000000))
-    network_id = os.environ.get('NETWORK_ID', "ae_uat")
-    node_url = os.environ.get('EPOCH_URL', "https://sdk-testnet.aepps.com").replace("https://", "node@")
-    node_url = node_url
-    explorer_url = os.environ.get("EXPLORER_URL", "https://testnet.explorer.aepps.com")
-    return render_template('index.html', amount=f"{format_amount(amount)}", node=node_url, explorer_url=explorer_url)
+    return render_template('index.html', amount=f"{format_amount(TOPUP_AMOUNT)}", node=NODE_URL, explorer_url=EXPLORER_URL)
 
 
 @app.route('/assets/scripts/<path:filename>')
@@ -91,7 +107,6 @@ def serve_images(filename):
 @cross_origin()
 def rest_faucet(recipient_address):
     """top up an account"""
-    amount = int(os.environ.get('TOPUP_AMOUNT', 5000000000000000000))
     notification_message = ""
     try:
         # validate the address
@@ -108,45 +123,40 @@ def rest_faucet(recipient_address):
             return jsonify({"message": msg}), 425
         app.config['address_cache'][recipient_address] = datetime.now()
         # sender account
-        sender = signing.Account.from_private_key_string(os.environ.get('FAUCET_ACCOUNT_PRIV_KEY'))
-        # payload
-        payload = os.environ.get('TX_PAYLOAD', "Faucet Tx")
+        sender = signing.Account.from_private_key_string(FAUCET_ACCOUNT_PRIV_KEY)
         # execute the spend transaction
         client = app.config.get("node_client")
-        tx = client.spend(sender, recipient_address, amount, payload=payload)
+        tx = client.spend(sender, recipient_address, TOPUP_AMOUNT, payload=SPEND_TX_PAYLOAD)
         # print the full transaction
         balance = client.get_account_by_pubkey(pubkey=recipient_address).balance
-        app.logger.info(f"Top up accont {recipient_address} of {amount} tx_hash: {tx.hash} completed")
+        app.logger.info(f"Top up account {recipient_address} of {TOPUP_AMOUNT} tx_hash: {tx.hash} completed")
         app.logger.debug(f"tx: {tx.tx}")
         # notifications
-        node = os.environ.get('EPOCH_URL', "https://sdk-testnet.aepps.com").replace("https://", "")
-        notification_message = f"Account `{recipient_address}` credited with {format_amount(amount)} tokens on `{node}`. (tx hash: `{tx}`)"
+        node = NODE_URL.replace("https://", "")
+        notification_message = f"Account `{recipient_address}` credited with {format_amount(TOPUP_AMOUNT)} tokens on `{node}`. (tx hash: `{tx}`)"
         # return
         return jsonify({"tx_hash": tx.hash, "balance": balance})
     except OpenAPIClientException as e:
-        app.logger.error(f"Api error: top up accont {recipient_address} of {amount} failed with error", e)
+        app.logger.error(f"API error: top up account {recipient_address} of {TOPUP_AMOUNT} failed with error", e)
         # notifications
-        node = os.environ.get('EPOCH_URL', "https://sdk-testnet.aepps.com").replace("https://", "")
-        notification_message = f"Api error: top up accont {recipient_address} of {amount} on {node} failed with error {e}"
+        node = NODE_URL.replace("https://", "")
+        notification_message = f"API error: top up account {recipient_address} of {TOPUP_AMOUNT} on {node} failed with error {e}"
         return jsonify({"message": "The node is temporarily unavailable, please try again later"}), 503
     except Exception as e:
-        app.logger.error(f"Generic error: top up accont {recipient_address} of {amount} failed with error", e)
+        app.logger.error(f"Generic error: top up account {recipient_address} of {TOPUP_AMOUNT} failed with error", e)
         # notifications
-        node = os.environ.get('EPOCH_URL', "https://sdk-testnet.aepps.com").replace("https://", "")
-        notification_message = f"Api error: top up accont {recipient_address} of {amount} on {node} failed with error {e}"
-        return jsonify({"message": "Unknow error, please contact <a href=\"mailto:aepp-dev@aeternity.com\" class=\"hover:text-pink-lighter\">aepp-dev@aeternity.com</a>"}), 500
+        node = NODE_URL.replace("https://", "")
+        notification_message = f"API error: top up account {recipient_address} of {TOPUP_AMOUNT} on {node} failed with error {e}"
+        return jsonify({"message": f"""Unknown error, please contact
+        <a href="{SUPPORT_EMAIL}" class="hover:text-pink-lighter">{SUPPORT_EMAIL}</a>"""}), 500
     finally:
         try:
             # telegram bot notifications
-            enable_telegaram = os.environ.get('TELEGRAM_API_TOKEN', False)
-            if enable_telegaram:
-                token = os.environ.get('TELEGRAM_API_TOKEN', None)
-                chat_id = os.environ.get('TELEGRAM_CHAT_ID', None)
-
-                if token is None or chat_id is None:
-                    app.logger.warning(f"missing chat_id ({chat_id}) or token {token} for telegram integration")
-                bot = telegram.Bot(token=token)
-                bot.send_message(chat_id=chat_id,
+            if TELEGRAM_API_TOKEN:
+                if TELEGRAM_CHAT_ID is None or TELEGRAM_API_TOKEN is None:
+                    app.logger.warning(f"missing chat_id ({TELEGRAM_CHAT_ID}) or token {TELEGRAM_API_TOKEN} for telegram integration")
+                bot = telegram.Bot(token=TELEGRAM_API_TOKEN)
+                bot.send_message(chat_id=TELEGRAM_CHAT_ID,
                                  text=notification_message,
                                  parse_mode=telegram.ParseMode.MARKDOWN)
         except Exception as e:
@@ -165,19 +175,17 @@ def rest_faucet(recipient_address):
 def cmd_start(args=None):
     app.logger.info("faucet service started")
     app.config['node_client'] = node.NodeClient(config=node.Config(
-        external_url=os.environ.get('EPOCH_URL', "https://sdk-testnet.aepps.com"),
-        internal_url=os.environ.get('EPOCH_URL_DEBUG', "https://sdk-testnet.aepps.com"),
-        network_id=os.environ.get('NETWORK_ID', "ae_uat"),
+        external_url=NODE_URL,
         blocking_mode=True,
         force_compatibility=True,
     ))
     # instantiate the cache
-    max_len = int(os.environ.get('CACHE_MAX_SIZE', 6000))
-    max_age = int(os.environ.get('CACHE_MAX_AGE', 3600 * 4))  # default 4h
-    app.config['cache_max_age'] = max_age
-    app.config['address_cache'] = ExpiringDict(max_len=max_len, max_age_seconds=max_age)
+    app.config['cache_max_age'] = CACHE_MAX_AGE
+    app.config['address_cache'] = ExpiringDict(
+        max_len=CACHE_MAX_SIZE,
+        max_age_seconds=CACHE_MAX_AGE)
 
-    serve(app, host='0.0.0.0', port=5000)
+    serve(app, host=SERVER_LISTEN_ADDRESS, port=SERVER_LISTEN_PORT)
 
 
 if __name__ == '__main__':

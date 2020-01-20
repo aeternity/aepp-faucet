@@ -1,11 +1,9 @@
-# build output folder
-OUTPUTFOLDER = dist
 # docker image
-DOCKER_REGISTRY = apeunit
-DOCKER_IMAGE = aepp-faucet
-K8S_DEPLOYMENT = aepp-faucet
-K8S_NAMESPACE = testnet
-DOCKER_TAG = $(shell git describe --always)
+DOCKER_REGISTRY ?= docker.io
+DOCKER_IMAGE ?= aeternity/aepp-faucet
+K8S_DEPLOYMENT ?= aepp-faucet
+K8S_NAMESPACE ?= testnet
+DOCKER_TAG ?= $(shell git describe --always)
 # build paramters
 OS = linux
 ARCH = amd64
@@ -23,9 +21,16 @@ lint-all:
 	flake8
 
 clean:
-	@echo remove $(OUTPUTFOLDER) folder
-	@rm -rf dist
+	@echo remove generated folders
+	rm -rf templates assets node_modules
 	@echo done
+
+build:
+	@echo build locally
+	npm install
+	npm run prod
+	python -m pip install -r requirements.txt
+	@echo build comleted
 
 docker-build:
 	@echo build image
@@ -37,7 +42,6 @@ docker-build:
 docker-push:
 	@echo push image
 	docker tag $(DOCKER_IMAGE) $(DOCKER_REGISTRY)/$(DOCKER_IMAGE):$(DOCKER_TAG)
-	aws ecr get-login --no-include-email --region eu-central-1 --profile aeternity-sdk | sh
 	docker push $(DOCKER_REGISTRY)/$(DOCKER_IMAGE):$(DOCKER_TAG)
 	@echo done
 

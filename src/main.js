@@ -1,24 +1,25 @@
 import axios from 'axios'
-const AMOUNT = 5
-const EXPLORER_URL = 'https://sdk-testnet.aepps.com'
 
 document.querySelector('#faucetForm').addEventListener('submit', (event) => {
   event.preventDefault()
+  const form = document.querySelector('#faucetForm')
+  const amount = form.dataset.amount
+  const explorerURL = form.dataset.explorerUrl
   const account = document.querySelector('#recipientAddress').value
   const resultEl = document.querySelector('#result')
   showResult(resultEl)
   document.querySelector('#result').innerHTML = ` <div class="flex flex-col">
                                                     <img src="/assets/images/cycle-loader.svg" class="inline-block">
-                                                    <div class="font-mono inline-block text-center mt-4">Adding ${AMOUNT} AE to:<br>
+                                                    <div class="font-mono inline-block text-center mt-4">Adding ${amount} AE to:<br>
                                                       <strong class="mt-4 inline-block text-xs">${account}</strong>
                                                     </div>
                                                   </div>`
   axios.post('/account/' + account)
     .then(function (response) {
-      resultEl.innerHTML = `<strong>Added ${AMOUNT} AE!</strong><br>
-      <br>Current Balance: <strong> ${(response.data.balance / 1000000000000000000)} AE </strong><br>
-      <br>Transaction: <a class="text-purple font-mono text-xs" href="${EXPLORER_URL}/#/tx/${response.data.tx_hash}" target="_blank">${response.data.tx_hash}</a><br>
-      <br>Account: <a class="text-purple font-mono text-xs" href="${EXPLORER_URL}/#/account/${account}" target="_blank">${account}</a>`
+      resultEl.innerHTML = `<strong>Added ${amount}!</strong><br>
+      <br>Transaction: <a class="text-purple font-mono text-xs" href="${explorerURL}/transactions/${response.data.tx_hash}" target="_blank">${response.data.tx_hash}</a><br>
+      <br>Account: <a class="text-purple font-mono text-xs" href="${explorerURL}/account/transactions/${account}" target="_blank">${account}</a>
+      <br>Balance: <strong> ${(response.data.balance / 1000000000000000000)} AE </strong><br>`
     })
     .catch(function (error) {
       resultEl.innerHTML = `Something went wrong. ¯\\_(ツ)_/¯  <br>

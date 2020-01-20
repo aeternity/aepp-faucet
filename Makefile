@@ -1,5 +1,3 @@
-# build output folder
-OUTPUTFOLDER = dist
 # docker image
 DOCKER_REGISTRY ?= docker.io
 DOCKER_IMAGE ?= aeternity/aepp-faucet
@@ -23,17 +21,21 @@ lint-all:
 	flake8
 
 clean:
-	@echo remove $(OUTPUTFOLDER) folder
-	@rm -rf assets
+	@echo remove generated folders
+	rm -rf templates assets node_modules
 	@echo done
+
+build:
+	@echo build locally
+	npm install
+	npm run prod
+	python -m pip install -r requirements.txt
+	@echo build comleted
 
 docker-build:
 	@echo build image
 	docker build -t $(DOCKER_IMAGE) -f Dockerfile .
 	@echo done
-
-docker-login-ecr:
-	aws ecr get-login --no-include-email --region eu-central-1 --profile aeternity-sdk | sh
 
 docker-push:
 	@echo push image

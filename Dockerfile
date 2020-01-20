@@ -1,26 +1,27 @@
-FROM node:lts-alpine as nodebuilder
+# front-end build
+FROM node:13 AS frontend
 
-# Add required files to download and compile only the dependencies
-COPY src /build/src
-COPY templates /build/templates
-COPY package-lock.json package.json *.config.js /build/
+COPY . /app
+WORKDIR /app
 
-RUN cd /build && npm install && npm run prod
+RUN npm install && npm run prod
 
-
+# actual build
 FROM python:3-slim-stretch
 
 RUN apt-get update && apt-get install -y \
 netbase \
 build-essential
 
-COPY --from=nodebuilder /build/assets /data/assets
-COPY --from=nodebuilder /build/templates /data/templates
+# copy generated assets
+COPY --from=frontend /app/assets /app/assets
+# copy generated index page
+COPY --from=frontend /app/templates /app/templates
+# copy python files
+COPY faucet.py /app/
+COPY requirements.txt /app/
+RUN pip install -r /app/requirements.txt
 
-COPY requirements.txt /data/
-RUN pip install -r /data/requirements.txt
-
-COPY faucet.py /data/
-
-ENTRYPOINT [ "python", "/data/faucet.py"]
+# run the app
+ENTRYPOINT [ "python", "/app/faucet.py"]
 CMD [ "start"]

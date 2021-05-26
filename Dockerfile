@@ -1,27 +1,30 @@
 # front-end build
-FROM node:13 AS frontend
+FROM node:15 AS frontend
 
-COPY . /app
+COPY ./frontend /app
 WORKDIR /app
 
 RUN npm install && npm run prod
 
 # actual build
-FROM python:3-slim-stretch
+FROM node:15
 
-RUN apt-get update && apt-get install -y \
-netbase \
-build-essential
+# use app directory
+WORKDIR /app
 
 # copy generated assets
-COPY --from=frontend /app/assets /app/assets
+COPY --from=frontend /app/assets ./assets
 # copy generated index page
-COPY --from=frontend /app/templates /app/templates
-# copy python files
-COPY faucet.py /app/
-COPY requirements.txt /app/
-RUN pip install -r /app/requirements.txt
+COPY --from=frontend /app/templates ./templates
+# copy package.json & package-lock.json
+COPY package*.json .
+# copy node files
+COPY faucet.js .
+# building your code for production
+RUN npm ci --only=production
+
+# Bundle app source
+COPY . .
 
 # run the app
-ENTRYPOINT [ "python", "/app/faucet.py"]
-CMD [ "start"]
+CMD [ "node", "faucet.js"]

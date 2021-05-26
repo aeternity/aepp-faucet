@@ -26,24 +26,20 @@ Configuring Faucet application via environment variable:
 
 ## Development
 
-to install, build and generate required files locally run
-`make build` from the root of the project. 
-
-To work with front-end or back-end only instead:
-
 ### Back-End
 
 1. Run `pip install -r requirements.txt` to install the python dependencies
 
-### Front-End 
+### Frontend 
 
-1. Run `npm i` from the root of the project
-2. Run `npm run dev` to start webpack
+1. Switch to the `frontend` folder of the project
+1. Run `npm i` from
+1. Run `npm run dev` to start webpack
 
 **Notes**:
-- All the Front-End resources are in `/src/`
-- Run `npm run prod` to compile assets for production
-- Compiled assets (`prod` or `dev`) will be created in `/assets/`
-- Index file from `src` will be created in `/templates/index.html`
+- All the frontend resources are in `frontend/`
+- Run `npm run prod` in this folder to compile assets for production
+- Compiled assets (`prod` or `dev`) will be created in `frontend/assets/`
+- Index file from `frontend/src` will be created in `frontend/templates/index.html`
 
 

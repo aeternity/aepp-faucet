@@ -1,8 +1,6 @@
 *
-!src
-!templates
+!frontend
 !package.json
 !package-lock.json
 !*.config.js
-!requirements.txt
-!faucet.py
+!faucet.js

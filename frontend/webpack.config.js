@@ -53,7 +53,7 @@ module.exports = {
     ]),
     new HtmlWebpackPlugin({
       template: path.resolve(__dirname, './src/index.html'),
-      filename: path.resolve(__dirname, './templates/index.html'),
+      filename: path.resolve(__dirname, './templates/index.mustache'),
       hash: true,
       inject: true
     }),

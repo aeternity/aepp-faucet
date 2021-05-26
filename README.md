@@ -15,10 +15,8 @@ Configuring Faucet application via environment variable:
 - `EXPLORER_URL` URL of the explorer app (Default: 'https://testnet.aeternal.io')
 - `SUPPORT_EMAIL` Email to display for support requests (Default: `aepp-dev@aeternity.com`)
 
-### Telegram integration
-
-- `TELEGRAM_API_TOKEN` the token of the telegram bot, if not set telegram integration will be disabled
-- `TELEGRAM_CHAT_ID` the chat id to send notifications to
+### Logging
+- `FAUCET_LOG_LEVEL` the winston log-level to use (Default: `info`)
 
 ### Server
 - `SERVER_LISTEN_ADDRESS` which address to listen to (Default: `0.0.0.0`)
@@ -26,20 +24,13 @@ Configuring Faucet application via environment variable:
 
 ## Development
 
-### Back-End
+This repository bundles a simple frontend and a node (express) based backend into a single docker container.
 
-1. Run `pip install -r requirements.txt` to install the python dependencies
+To build and run it locally execute following commands in the root:
+```
+make docker-build
+make docker-run
+```
 
-### Frontend 
-
-1. Switch to the `frontend` folder of the project
-1. Run `npm i` from
-1. Run `npm run dev` to start webpack
-
-**Notes**:
-- All the frontend resources are in `frontend/`
-- Run `npm run prod` in this folder to compile assets for production
-- Compiled assets (`prod` or `dev`) will be created in `frontend/assets/`
-- Index file from `frontend/src` will be created in `frontend/templates/index.html`
-
-
+### Notes:
+- The `frontend/index.html` is transformed into `index.mustache` in order to allow the node backend to provide dynamic values using the [Mustache](https://mustache.github.io/) template engine.

@@ -10,7 +10,7 @@ document.querySelector('#faucetForm').addEventListener('submit', (event) => {
   showResult(resultEl)
   document.querySelector('#result').innerHTML = ` <div class="flex flex-col">
                                                     <img src="/assets/images/cycle-loader.svg" class="inline-block">
-                                                    <div class="font-mono inline-block text-center mt-4">Adding ${amount} AE to:<br>
+                                                    <div class="font-mono inline-block text-center mt-4">Adding ${amount} to:<br>
                                                       <strong class="mt-4 inline-block text-xs">${account}</strong>
                                                     </div>
                                                   </div>`

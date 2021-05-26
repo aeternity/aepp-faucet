@@ -23,12 +23,11 @@ const SPEND_TX_PAYLOAD = process.env.SPEND_TX_PAYLOAD || 'Faucet Tx';
 const NODE_URL = process.env.NODE_URL || 'https://testnet.aeternity.io';
 const EXPLORER_URL = process.env.EXPLORER_URL || 'https://explorer.testnet.aeternity.io';
 const SUPPORT_EMAIL = process.env.SUPPORT_EMAIL || 'aepp-dev@aeternity.com';
-// telegram notifications
-const TELEGRAM_API_TOKEN = process.env.TELEGRAM_API_TOKEN;
-const TELEGRAM_CHAT_ID = TELEGRAM_API_TOKEN ? setRequiredVariable('TELEGRAM_CHAT_ID') : process.env.TELEGRAM_CHAT_ID;
 // graylisting
 const CACHE_MAX_SIZE = process.env.CACHE_MAX_SIZE || 6000;
-const CACHE_MAX_AGE = process.env.CACHE_MAX_AGE || 3600 * 4; // default 4h 
+const CACHE_MAX_AGE = process.env.CACHE_MAX_AGE || 3600 * 4; // default 4h
+// logging
+const FAUCET_LOG_LEVEL = process.env.FAUCET_LOG_LEVEL || 'info';
 // server
 const SERVER_LISTEN_ADDRESS = process.env.SERVER_LISTEN_ADDRESS || '0.0.0.0';
 const SERVER_LISTEN_PORT = process.env.SERVER_LISTEN_PORT || 5000;
@@ -39,6 +38,7 @@ const KEYPAIR = {
 };
 
 const logger = winston.createLogger({
+    level: FAUCET_LOG_LEVEL,
     format: winston.format.combine(
         winston.format.errors({ stack: true }),
         winston.format.simple(),
@@ -78,7 +78,7 @@ const run = async () => {
 
     // serve frontend
     app.get('/', (req, res) => {
-        res.render('index', {amount: `${TOPUP_AMOUNT}`, node: NODE_URL, explorer_url: EXPLORER_URL});
+        res.render('index', {amount: `${TOPUP_AMOUNT} AE`, node: NODE_URL, explorer_url: EXPLORER_URL});
     });
 
     // top up address
@@ -107,7 +107,6 @@ const run = async () => {
                 return;
             }
             address_cache.set(address, DateTime.now());
-            // TODO property "denomination" not working properly?
             const tx = await client.spend(AmountFormatter.toAettos(TOPUP_AMOUNT), address, { payload: SPEND_TX_PAYLOAD });
             logger.info(`Top up address ${address} with ${TOPUP_AMOUNT} AE tx_hash: ${tx.hash} completed.`);
             logger.debug(JSON.stringify(tx));
@@ -118,15 +117,6 @@ const run = async () => {
             message = `Generic error: top up account ${address} of ${TOPUP_AMOUNT} AE on ${NODE_URL.replace('https://', '')} failed with error.`;
             logger.error(message, err);
             res.send({message: `""Unknown error, please contact <a href="${SUPPORT_EMAIL}" class="hover:text-pink-lighter">${SUPPORT_EMAIL}</a>""`});
-        } finally {
-            if(TELEGRAM_API_TOKEN) {
-                try {
-                    logger.info(`Telegram notification ... to be implemented ;)`);
-                    logger.info(`We would send this message: ${message}`);
-                } catch(err) {
-                    logger.error(`Error delivering notifications`, err);
-                }
-            }
         }
     });
 
@@ -135,7 +125,7 @@ const run = async () => {
         logger.info(`Faucet Address: ${KEYPAIR.publicKey}`);
         const balance = await client.getBalance(KEYPAIR.publicKey);
         logger.info(`Faucet Balance: ${AmountFormatter.toAe(balance)} AE`);
-        logger.info(`Telegram notifications enabled: ${TELEGRAM_API_TOKEN ? true : false}`)
+        logger.info(`Log-level: ${FAUCET_LOG_LEVEL}`);
     });
 }
 

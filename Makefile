@@ -23,7 +23,7 @@ docker-build:
 	@echo done
 
 docker-run:
-	@docker run -p 5000:5000 -e FAUCET_ACCOUNT_PRIV_KEY=$(FAUCET_ACCOUNT_PRIV_KEY) $(DOCKER_IMAGE)
+	@docker run -p 5000:5000 -e FAUCET_ACCOUNT_PRIV_KEY=$(FAUCET_ACCOUNT_PRIV_KEY) -e FAUCET_LOG_LEVEL=$(FAUCET_LOG_LEVEL) $(DOCKER_IMAGE)
 
 docker-push:
 	@echo push image

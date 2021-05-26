@@ -84,12 +84,11 @@ const run = async () => {
     // top up address
     app.post('/account/:recipient_address', async (req, res) => {
         const address = req.params.recipient_address;
-        let message = '';
         try {
             logger.info(`Top up request for ${address}`);
             // validate address
             if(!Crypto.isAddressValid(address)) {
-                message = `The provided address is not valid: ${address}`;
+                const message = `The provided address is not valid: ${address}`;
                 logger.error(message);
                 res.status(400);
                 res.send({message});
@@ -100,7 +99,7 @@ const run = async () => {
             if(top_up_date) {
                 const graylist_exp_date = top_up_date.plus({seconds: CACHE_MAX_AGE});
                 const delta = graylist_exp_date.diffNow().toFormat("h'h' mm'm' ss's'");
-                message = `The address ${address} is graylisted for another ${delta}`;;
+                const message = `The address ${address} is graylisted for another ${delta}`;;
                 logger.warn(message);
                 res.status(425);
                 res.send({message});
@@ -110,12 +109,10 @@ const run = async () => {
             const tx = await client.spend(AmountFormatter.toAettos(TOPUP_AMOUNT), address, { payload: SPEND_TX_PAYLOAD });
             logger.info(`Top up address ${address} with ${TOPUP_AMOUNT} AE tx_hash: ${tx.hash} completed.`);
             logger.debug(JSON.stringify(tx));
-            message = `Address ${address} credited with ${TOPUP_AMOUNT} AE tokens on ${NODE_URL.replace('https://', '')}. (tx hash: ${tx.hash})`;
             const new_balance = await client.getBalance(address);
             res.send({tx_hash: tx.hash, balance: new_balance});
         } catch (err) {
-            message = `Generic error: top up account ${address} of ${TOPUP_AMOUNT} AE on ${NODE_URL.replace('https://', '')} failed with error.`;
-            logger.error(message, err);
+            logger.error(`Generic error: top up account ${address} of ${TOPUP_AMOUNT} AE on ${NODE_URL.replace('https://', '')} failed with error.`, err);
             res.send({message: `""Unknown error, please contact <a href="${SUPPORT_EMAIL}" class="hover:text-pink-lighter">${SUPPORT_EMAIL}</a>""`});
         }
     });
